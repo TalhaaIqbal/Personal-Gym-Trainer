@@ -1,0 +1,38 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+
+# Validation
+pydantic
+pydantic-settings
+email-validator
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+bcrypt
+
+# Security
+slowapi
+limiter
+
+# Environment
+python-dotenv
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+
+# Dev tools
+black
+
+#Feature Extract
+beautifulsoup4==4.12.3
+python-whois==0.9.4
