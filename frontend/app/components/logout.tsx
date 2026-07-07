@@ -1,6 +1,6 @@
 'use client'
 
-import axios from "axios"
+import axios from "@/lib/axios"
 import { useRouter } from "next/navigation"
 
 export default function Logout() {
@@ -8,18 +8,13 @@ export default function Logout() {
 
     const handleLogOut = async () => {
         try {
-            await axios.post("/auth/logout", {}, {
-                headers: {
-                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-                    "Content-Type": "application/json"
-                }
-            })
+            await axios.post("/auth/logout")
         } catch (error) {
             console.error('Logout failed:', error)
         }
         finally {
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
             router.push("/login");
         }
     }
