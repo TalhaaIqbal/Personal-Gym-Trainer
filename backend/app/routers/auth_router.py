@@ -1,3 +1,5 @@
+from fastapi.security import HTTPAuthorizationCredentials
+from ..core.middleware import bearer_scheme
 from ..services.auth_service import AuthService
 from ..repositories.user_repository import UserRepository
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +18,8 @@ def get_auth_service(collection: AsyncIOMotorCollection = Depends(get_user_colle
     return AuthService(repository)
 
 @router.post("/login", response_model=Token)
-async def login(user_data: LoginRequest, service: AuthService = Depends(get_auth_service)):
+async def login(user_data: LoginRequest, 
+                service: AuthService = Depends(get_auth_service)):
     try:
         user = await service.authenticate_user(user_data.email, user_data.password)
         if not user:
@@ -34,9 +37,10 @@ async def login(user_data: LoginRequest, service: AuthService = Depends(get_auth
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: RegisterRequest, service: AuthService = Depends(get_auth_service)):
+async def register(user_data: RegisterRequest,
+                   service: AuthService = Depends(get_auth_service)):
     try:
-        user = await service.register_user(user_data.email, user_data.password, user_data.name)
+        user = await service.register_user(user_data.email, user_data.password, user_data.name, "client")
         if not user:
             raise HTTPException(status_code=400, detail="User with this email already exists")
         
@@ -48,8 +52,24 @@ async def register(user_data: RegisterRequest, service: AuthService = Depends(ge
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/logout")
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    service: AuthService = Depends(get_auth_service),
+):
+    try:
+        token = credentials.credentials
+        await service.logout_user(token)
+        return {"message": "Logged out successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/refresh", response_model=Token)
-async def refresh_token(token_data: RefreshTokenRequest, service: AuthService = Depends(get_auth_service)):
+async def refresh_token(token_data: RefreshTokenRequest,
+                        service: AuthService = Depends(get_auth_service)):
     try:
         tokens = await service.refresh_tokens(token_data.refresh_token)
         if not tokens:

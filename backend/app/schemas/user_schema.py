@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
+from typing import Literal
 
 def _validate_password_strength(v: str) -> str:
     if len(v) < 8:
@@ -24,6 +25,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
+    role: Literal["client", "trainer", "admin"] = "client"
 
     @field_validator('password')
     @classmethod
@@ -35,6 +37,7 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
     name: str | None = None
+    role: Literal["client", "trainer", "admin"] | None = None
 
     @field_validator('password')
     @classmethod
@@ -48,6 +51,6 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: EmailStr
-    is_trainer: bool = False
+    role: Literal["client", "trainer", "admin"] = "client"
 
     model_config = ConfigDict(from_attributes=True)

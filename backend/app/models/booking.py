@@ -9,9 +9,10 @@ def validate_object_id(v: str) -> str:
 
 PyProjectID = Annotated[str, BeforeValidator(validate_object_id)]
 
-class User(BaseModel):
-    id: PyProjectID
-    name: str
-    email: str
-    password: str
-    role: Literal["client", "trainer", "admin"] = "client"
+class Booking(BaseModel):
+    trainer_id: PyProjectID
+    client_id: PyProjectID
+    date: str
+    start_time: str
+    end_time: str
+    status: Literal["pending", "confirmed", "cancelled"] = "pending"
