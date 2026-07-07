@@ -26,10 +26,9 @@ export default function Login() {
                 password: formData.password
             })
             
-            // Store token (we'll implement proper auth middleware tomorrow)
             localStorage.setItem('token', response.data.access_token)
+            localStorage.setItem('refreshToken', response.data.refresh_token)
             
-            // Redirect to dashboard or home
             router.push('/')
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Login failed. Please try again.')
@@ -42,7 +41,7 @@ export default function Login() {
         <>
             <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
                 <div className="w-full max-w-md">
-                    <div className="bg-blue-900/50 backdrop-blur-md border border-blue-700/50 rounded-2xl shadow-2xl p-8">
+                    <div className="bg-gray-500/10 backdrop-blur-md border border-blue-700/50 rounded-2xl shadow-2xl p-8">
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
                             <p className="text-blue-200">Sign in to continue your fitness journey</p>
@@ -95,7 +94,7 @@ export default function Login() {
                                     />
                                     <span className="ml-2 text-sm text-blue-200">Remember me</span>
                                 </label>
-                                <Link href="/auth/forgot-password" className="text-sm text-blue-300 hover:text-white transition-colors duration-300">
+                                <Link href="/forgot-password" className="text-sm text-blue-300 hover:text-white transition-colors duration-300">
                                     Forgot password?
                                 </Link>
                             </div>
@@ -147,7 +146,7 @@ export default function Login() {
                         <div className="mt-6 text-center">
                             <p className="text-blue-200">
                                 Don't have an account?{' '}
-                                <Link href="/auth/register" className="text-blue-300 hover:text-white font-medium transition-colors duration-300">
+                                <Link href="/register" className="text-blue-300 hover:text-white font-medium transition-colors duration-300">
                                     Sign up
                                 </Link>
                             </p>

@@ -28,17 +28,13 @@ export default function Register() {
         setLoading(true)
 
         try {
-            const response = await axios.post('/auth/register', {
+            await axios.post('/auth/register', {
                 email: formData.email,
                 password: formData.password,
                 name: formData.name
             })
             
-            // Store token (we'll implement proper auth middleware tomorrow)
-            localStorage.setItem('token', response.data.id)
-            
-            // Redirect to dashboard or home
-            router.push('/')
+            router.push('/login')
         } catch (err: any) {
             setError(err.response?.data?.detail || 'Registration failed. Please try again.')
         } finally {
@@ -135,7 +131,7 @@ export default function Register() {
                         <div className="mt-6 text-center">
                             <p className="text-blue-200">
                                 Already have an account?{' '}
-                                <Link href="/auth/login" className="text-blue-300 hover:text-white font-medium transition-colors duration-300">
+                                <Link href="/login" className="text-blue-300 hover:text-white font-medium transition-colors duration-300">
                                     Sign in
                                 </Link>
                             </p>
