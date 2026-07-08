@@ -1,6 +1,7 @@
-from pydantic import BaseModel, field_validator, BeforeValidator
-from typing import Annotated, Literal
+from pydantic import BaseModel, BeforeValidator
+from typing import Annotated
 from bson import ObjectId
+from datetime import date, time
 
 def validate_object_id(v: str) -> str:
     if ObjectId.is_valid(v):
@@ -12,7 +13,6 @@ PyProjectID = Annotated[str, BeforeValidator(validate_object_id)]
 class Availability(BaseModel):
     id: PyProjectID
     trainer_id: PyProjectID
-    date: str
-    start_time: str
-    end_time: str
-    is_available: bool = True
+    booking_date: date
+    start_time: time
+    end_time: time

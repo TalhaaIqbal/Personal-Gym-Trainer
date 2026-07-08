@@ -17,6 +17,7 @@ def get_auth_service(collection: AsyncIOMotorCollection = Depends(get_user_colle
     repository = UserRepository(collection)
     return AuthService(repository)
 
+
 @router.post("/login", response_model=Token)
 async def login(user_data: LoginRequest, 
                 service: AuthService = Depends(get_auth_service)):
@@ -34,6 +35,7 @@ async def login(user_data: LoginRequest,
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.post("/register", response_model=UserResponse)

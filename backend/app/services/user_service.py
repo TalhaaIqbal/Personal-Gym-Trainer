@@ -1,6 +1,5 @@
 from ..repositories.user_repository import UserRepository
 from ..schemas.user_schema import UserCreate, UserUpdate
-from bson import ObjectId
 
 class UserService:
     def __init__(self, repository: UserRepository) -> None:
@@ -45,8 +44,8 @@ class UserService:
             return None
 
         update_data = user_data.model_dump(exclude_unset=True)
-        # if "password" in update_data:
-        #     update_data["password"] = hash_password(update_data["password"])
+        if "password" in update_data:
+            update_data["password"] = hash_password(update_data["password"])
 
         updated_user = await self.repository.update(user_id, update_data)
         return self._convert_to_response(updated_user)

@@ -5,7 +5,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from ..core.database import db
 from ..schemas.user_schema import UserResponse, UserCreate, UserUpdate
 from loguru import logger
-from ..core.middleware import get_current_admin
+from ..core.middleware import get_current_admin, get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -18,6 +18,10 @@ def get_user_service(collection: AsyncIOMotorCollection = Depends(get_user_colle
 
 
 #------------------------------User routes------------------------------
+
+@router.get("/me", response_model=UserResponse, response_model_include={"id", "email", "role"})
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    return current_user
 
 @router.post("/", response_model=UserResponse)
 async def create_user(user_data: UserCreate, service: UserService = Depends(get_user_service)):

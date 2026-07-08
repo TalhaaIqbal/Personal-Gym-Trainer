@@ -25,4 +25,4 @@ class WorkoutPlan(BaseModel):
     client_id: PyProjectID
     title: str
     description: str | None = None
-    days: list[list[WorkoutDay]]
+    weeks: list[list[WorkoutDay]]
