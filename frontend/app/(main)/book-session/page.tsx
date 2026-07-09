@@ -84,7 +84,7 @@ export default function BookSession() {
                 end_time: avail.end_time
             })
             alert('Booking request sent successfully!')
-            router.push('/my-bookings')
+            router.push('/my-bookings/client')
         } catch (error: any) {
             console.error("Error booking session:", error)
             alert(error.response?.data?.detail || 'Failed to book session')
@@ -154,7 +154,7 @@ export default function BookSession() {
                     )}
 
                     <div className="mt-6 text-center">
-                        <Link href="/my-bookings" className="text-blue-300 hover:text-blue-200 underline">
+                        <Link href="/my-bookings/client" className="text-blue-300 hover:text-blue-200 underline">
                             View My Bookings
                         </Link>
                     </div>

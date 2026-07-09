@@ -50,7 +50,7 @@ async def update_availability(
     service: AvailabilityService = Depends(get_availability_service),
 ):
     try:
-        availability = await service.update_availability(availability_id, str(current_user["_id"]), availability_data)
+        availability = await service.update_availability(availability_id, str(current_user.get("_id")), availability_data)
         if not availability:
             raise HTTPException(status_code=404, detail="Availability not found")
         return availability
@@ -74,6 +74,15 @@ async def delete_availability(availability_id: str, service: AvailabilityService
 
 
 #------------------------------Client routes + Trainer routes------------------------------
+
+@router.get("/me", response_model=list[AvailabilityResponse], dependencies=[Depends(get_current_trainer)])
+async def get_my_availability(current_user = Depends(get_current_trainer), 
+                              service: AvailabilityService = Depends(get_availability_service)):
+    try:
+        availability = await service.get_availabilities_by_trainer_id(str(current_user.get("_id")))
+        return availability
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{trainer_id}", response_model=list[AvailabilityResponse], dependencies=[Depends(get_current_user)])
 async def get_availability(trainer_id: str, service: AvailabilityService = Depends(get_availability_service)):

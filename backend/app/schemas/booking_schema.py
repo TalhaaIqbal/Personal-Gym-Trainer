@@ -67,6 +67,10 @@ class TrainerInfo(BaseModel):
     name: str
     email: str
 
+class ClientInfo(BaseModel):
+    name: str
+    email: str
+
 class BookingWithTrainerResponse(BaseModel):
     id: str
     trainer_id: str
@@ -76,3 +80,13 @@ class BookingWithTrainerResponse(BaseModel):
     end_time: str
     status: str
     trainer_info: TrainerInfo | None = None
+
+class BookingWithClientResponse(BaseModel):
+    id: str
+    trainer_id: str
+    client_id: str
+    booking_date: str
+    start_time: str
+    end_time: str
+    status: str
+    client_info: ClientInfo | None = None

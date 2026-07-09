@@ -11,7 +11,8 @@ class AvailabilityService:
     def _convert_to_response(self, availability_doc: dict) -> dict:
         if not availability_doc:
             return None
-        availability_doc["id"] = str(availability_doc.pop("_id"))
+        if "_id" in availability_doc:
+            availability_doc["id"] = str(availability_doc.pop("_id"))
         return availability_doc
 
     def _convert_datetime_to_string(self, data: dict) -> dict:

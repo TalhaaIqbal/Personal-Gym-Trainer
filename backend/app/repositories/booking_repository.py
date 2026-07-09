@@ -58,4 +58,47 @@ class BookingRepository(BaseRepository[Booking]):
         ]
         
         cursor = await self.collection.aggregate(pipeline) 
+        return await cursor.to_list(length=None)
+
+    async def get_by_trainer_id_with_client_info(self, trainer_id: str):
+        pipeline = [
+            {
+                "$match": {"trainer_id": trainer_id}
+            },
+            {
+                "$lookup": {  #Left join
+                    "from": "users",
+                    "let" : {
+                        "cid": "$client_id"
+                    },
+                    "pipeline": [  #Sub pipeline (or query)
+                        {
+                            "$match": {
+                                "$expr": {
+                                    "$eq": ["$_id", { #On users._id = booking.client_id
+                                        "$toObjectId": "$$cid" #Convert string to ObjectId
+                                    }]
+                                }
+
+                            }
+                        },
+                        {
+                            "$project": { #get these 2 fields
+                                "name": 1,
+                                "email": 1
+                            }
+                        }
+                    ],
+                    "as": "client_info"
+                }
+            },
+            {
+                "$unwind": {  #Flatten the client_info array into single object
+                    "path": "$client_info",
+                    "preserveNullAndEmptyArrays": True #No deletion of empty records
+                }
+            },
+        ]
+        
+        cursor = await self.collection.aggregate(pipeline) 
         return await cursor.to_list(length=None) 

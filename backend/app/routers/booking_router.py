@@ -3,7 +3,7 @@ from ..repositories.booking_repository import BookingRepository
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorCollection
 from ..core.database import db
-from ..schemas.booking_schema import BookingCreate, BookingStatusUpdate, BookingResponse, BookingWithTrainerResponse
+from ..schemas.booking_schema import BookingCreate, BookingStatusUpdate, BookingResponse, BookingWithTrainerResponse, BookingWithClientResponse
 from loguru import logger
 from ..core.middleware import get_current_admin, get_current_trainer, get_current_user
 
@@ -58,7 +58,7 @@ async def update_booking(booking_id: str,
 
 #------------------------------Trainer routes------------------------------
 
-@router.get("/trainer", response_model=list[BookingResponse])
+@router.get("/trainer", response_model=list[BookingWithClientResponse])
 async def get_trainer_bookings(status: str = Query(None), current_trainer = Depends(get_current_trainer), service: BookingService = Depends(get_booking_service)):
     try:
         return await service.get_bookings_by_trainer_id(current_trainer["id"], status)

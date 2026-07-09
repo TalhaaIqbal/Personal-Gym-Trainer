@@ -39,7 +39,7 @@ class BookingService:
         return [self._convert_to_response(booking) for booking in bookings]
 
     async def get_bookings_by_trainer_id(self, trainer_id: str, status: str = None):
-        bookings = await self.repository.get_by_trainer_id(trainer_id, status)
+        bookings = await self.repository.get_by_trainer_id_with_client_info(trainer_id)
         return [self._convert_to_response(booking) for booking in bookings]
 
     async def create_booking(self, booking: BookingCreate, client_id: str):
