@@ -6,6 +6,7 @@ from ..core.database import db
 from ..schemas.user_schema import UserResponse, UserCreate, UserUpdate
 from loguru import logger
 from ..core.middleware import get_current_admin, get_current_user
+from enum import Enum
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -15,6 +16,11 @@ def get_user_collection() -> AsyncIOMotorCollection:
 def get_user_service(collection: AsyncIOMotorCollection = Depends(get_user_collection)) -> UserService:
     repository = UserRepository(collection)
     return UserService(repository)
+
+
+class UserRoles(str, Enum):
+    TRAINER = "trainer"
+    CLIENT = "client"
 
 
 #------------------------------User routes------------------------------
@@ -34,6 +40,25 @@ async def create_user(user_data: UserCreate, service: UserService = Depends(get_
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/trainers", response_model=list[UserResponse])
+async def list_trainers(current_user: dict = Depends(get_current_user), 
+                        service: UserService = Depends(get_user_service)
+                        ):
+    try:
+        return await service.get_by_role(UserRoles.TRAINER)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/clients", response_model=list[UserResponse])
+async def list_clients(current_user: dict = Depends(get_current_user), 
+                        service: UserService = Depends(get_user_service)
+                        ):
+    try:
+        return await service.get_by_role(UserRoles.CLIENT)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: str, service: UserService = Depends(get_user_service)):
     try:
@@ -46,6 +71,7 @@ async def get_user(user_id: str, service: UserService = Depends(get_user_service
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 #------------------------------Admin only routes------------------------------

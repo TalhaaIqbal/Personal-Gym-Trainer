@@ -52,3 +52,10 @@ class UserService:
 
     async def delete_user(self, user_id: str):
         return await self.repository.delete(user_id)
+
+
+    #-------Trainer / Client-------#
+    async def get_by_role(self, role: str):
+        roled_users = await self.repository.get_by_role(role)
+        print("Roled users:", roled_users)
+        return [self._convert_to_response(user) for user in roled_users]

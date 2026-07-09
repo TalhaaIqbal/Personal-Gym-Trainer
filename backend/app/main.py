@@ -24,7 +24,8 @@ app = FastAPI(
     title="Personal Gym Trainer API",
     description="Personal Gym Trainer platform",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    debug=True
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

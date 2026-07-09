@@ -76,9 +76,6 @@ export default function Navbar() {
                 </li>
               )}
               <li>
-                <Link href="/my-bookings" className={linkClass("/my-bookings")}>My Bookings</Link>
-              </li>
-              <li>
                 <Link href="#" className={linkClass("#")}>Services</Link>
               </li>
               <li>

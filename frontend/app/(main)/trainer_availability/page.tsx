@@ -5,15 +5,11 @@ import axios from '@/lib/axios'
 import { useRouter } from 'next/navigation'
 import Navbar from '../../components/navbar'
 
-interface CellKey {
-    date: string      
-    hour: number       
-}
 
 export default function TrainerAvailability() {
     const router = useRouter()
     const [currentUser, setCurrentUser] = useState<any>(null)
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())
     const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set())
 
@@ -43,23 +39,23 @@ export default function TrainerAvailability() {
     const fetchBookedSlots = async () => {
         try {
             const response = await axios.get(`/availability/${currentUser?.id}`)
-            const bookings = response.data
-            console.log("booking", bookings);
+            const availabilities = response.data
+            console.log("availabilities", availabilities);
             
             const booked = new Set<string>()
-            if (Array.isArray(bookings)) {
-                bookings.forEach((booking: any) => {
-                    if (booking.status !== 'cancelled') {
-                        const hour = parseInt(booking.start_time.split(':')[0])
-                        const key = cellKey(booking.booking_date, hour)
-                        booked.add(key)
-                    }
+            if (Array.isArray(availabilities)) {
+                availabilities.forEach((availability: any) => {
+                    const hour = parseInt(availability.start_time.split(':')[0])
+                    const key = cellKey(availability.booking_date, hour)
+                    booked.add(key)
                 })
             }
             
             setBookedSlots(booked)
         } catch (error) {
             console.error("Error fetching booked slots:", error)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -166,6 +162,17 @@ export default function TrainerAvailability() {
     const dates = getDates()
     const hours = getHours()
 
+    if (loading) {
+        return (
+            <>
+                <Navbar />
+                <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+                    <p className="text-white text-xl">Loading availability...</p>
+                </section>
+            </>
+        )
+    }
+
     return (
         <>
             <Navbar />
@@ -202,7 +209,7 @@ export default function TrainerAvailability() {
                                                     onClick={() => toggleCell(date, hour)}
                                                     className={`p-3 border border-white/10 text-center transition-all duration-150 ${
                                                         isBooked
-                                                            ? 'bg-red-500/50 cursor-not-allowed opacity-60'
+                                                            ? 'bg-red-600 cursor-not-allowed opacity-60'
                                                             : isSelected
                                                             ? 'bg-blue-500 hover:bg-blue-400 cursor-pointer'
                                                             : 'bg-white/5 hover:bg-white/15 cursor-pointer'
