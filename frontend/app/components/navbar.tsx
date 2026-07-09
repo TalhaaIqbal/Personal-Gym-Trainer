@@ -66,14 +66,24 @@ export default function Navbar() {
                 <Link href="/" className={linkClass("/")}>Home</Link>
               </li>
               {userRole === 'trainer' && (
-                <li>
-                  <Link href="/trainer_availability" className={linkClass("/trainer_availability")}>Set Availability</Link>
-                </li>
+                <>
+                  <li>
+                    <Link href="/trainer_availability" className={linkClass("/trainer_availability")}>Set Availability</Link>
+                  </li>
+                  <li>
+                    <Link href="/my-bookings/trainer" className={linkClass("/my-bookings/trainer")}>My Bookings</Link>
+                  </li>
+                </>
               )}
               {userRole === 'client' && (
-                <li>
-                  <Link href="/book-session" className={linkClass("/book-session")}>Book Session</Link>
-                </li>
+                <>
+                  <li>
+                    <Link href="/book-session" className={linkClass("/book-session")}>Book Session</Link>
+                  </li>
+                  <li>
+                    <Link href="/my-bookings/client" className={linkClass("/my-bookings/client")}>My Bookings</Link>
+                  </li>
+                </>
               )}
               <li>
                 <Link href="#" className={linkClass("#")}>Services</Link>

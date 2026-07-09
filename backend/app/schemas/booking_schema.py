@@ -35,25 +35,8 @@ class BookingCreate(BaseModel):
         return self
 
 
-class BookingUpdate(BaseModel):
-    booking_date: date | None = None
-    start_time: time | None = None
-    end_time: time | None = None
-    status: Literal["pending", "confirmed", "cancelled"] | None = None
-
-    @field_validator('booking_date')
-    def validate_booking_date(cls, v):
-        validate_date(v)
-        return v
-
-    @field_validator('start_time', 'end_time')
-    def validate_time(cls, v):
-        return v
-
-    @model_validator(mode='after')
-    def validate_time_order(self):
-        validate_time_order(self.start_time, self.end_time)
-        return self
+class BookingStatusUpdate(BaseModel):
+    status: Literal["pending", "confirmed", "cancelled"]
 
 
 class BookingResponse(BaseModel):
@@ -78,3 +61,18 @@ class BookingResponse(BaseModel):
     def validate_time_order(self):
         validate_time_order(self.start_time, self.end_time)
         return self
+    
+
+class TrainerInfo(BaseModel):
+    name: str
+    email: str
+
+class BookingWithTrainerResponse(BaseModel):
+    id: str
+    trainer_id: str
+    client_id: str
+    booking_date: str
+    start_time: str
+    end_time: str
+    status: str
+    trainer_info: TrainerInfo | None = None

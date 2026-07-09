@@ -1,5 +1,5 @@
 from ..repositories.booking_repository import BookingRepository
-from ..schemas.booking_schema import BookingCreate, BookingUpdate
+from ..schemas.booking_schema import BookingCreate, BookingStatusUpdate
 from bson import ObjectId
 from datetime import date, time
 
@@ -34,8 +34,8 @@ class BookingService:
         bookings = await self.repository.get_available_bookings()
         return [self._convert_to_response(booking) for booking in bookings]
 
-    async def get_bookings_by_client_id(self, client_id: str, status: str = None):
-        bookings = await self.repository.get_by_client_id(client_id, status)
+    async def get_bookings_by_client_id(self, client_id: str):
+        bookings = await self.repository.get_by_client_id_with_trainer_info(client_id)
         return [self._convert_to_response(booking) for booking in bookings]
 
     async def get_bookings_by_trainer_id(self, trainer_id: str, status: str = None):
@@ -50,9 +50,8 @@ class BookingService:
         result = await self.repository.create(booking_dict)
         return self._convert_to_response(result)
     
-    async def update_booking(self, booking_id: str, booking: BookingUpdate):
-        booking_dict = booking.model_dump(exclude_unset=True)
-        booking_dict = self._convert_datetime_to_string(booking_dict)
+    async def update_booking(self, booking_id: str, booking: BookingStatusUpdate):
+        booking_dict = booking.model_dump()
         result = await self.repository.update(booking_id, booking_dict)
         return self._convert_to_response(result)
     
