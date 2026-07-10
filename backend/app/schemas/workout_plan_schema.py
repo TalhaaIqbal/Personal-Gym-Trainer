@@ -21,7 +21,7 @@ class WorkoutDayCreate(BaseModel):
     is_rest_day: bool = False
     exercises: List[ExerciseCreate] = []
 
-class WorkoutPlanCreate(BaseModel):
+class WorkoutPlanCreate(BaseModel):  #Main
     client_id: str
     name: str
     description: Optional[str] = None
