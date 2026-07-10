@@ -6,6 +6,7 @@ from ..core.database import db
 from ..schemas.workout_plan_schema import WorkoutPlanCreate, WorkoutPlanUpdate, WorkoutPlanResponse
 from loguru import logger
 from ..core.middleware import get_current_admin, get_current_trainer, get_current_user
+from typing import Optional
 
 router = APIRouter(prefix="/workout-plans", tags=["Workout Plans"])
 
@@ -84,10 +85,15 @@ async def delete_workout_plan(plan_id: str, service: WorkoutPlanService = Depend
 #------------------------------Client routes------------------------------
 
 @router.get("/client", response_model=list[WorkoutPlanResponse], dependencies=[Depends(get_current_user)])
-async def get_client_workout_plans(summary = "Get Clients own workout plans", current_user = Depends(get_current_user),
+async def get_client_workout_plans(summary = "Get Clients own workout plans", 
+                                   trainer_id: Optional[str] = None,
+                                   current_user = Depends(get_current_user),
                                    service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
-        plans = await service.get_workout_plans_by_client(current_user["id"])
+        if trainer_id:
+            plans = await service.get_workout_plans_by_trainer_and_client(trainer_id, current_user["id"])
+        else:
+            plans = await service.get_workout_plans_by_client(current_user["id"])
         return plans
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

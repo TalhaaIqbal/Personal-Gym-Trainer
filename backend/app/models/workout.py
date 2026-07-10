@@ -11,7 +11,7 @@ PyProjectID = Annotated[str, BeforeValidator(validate_object_id)]
 
 class Exercise(BaseModel):
     name: str
-    muscle_group: Literal["chest", "back", "legs", "shoulders", "arms", "cardio", "core", "mixed"]
+    muscle_group: Literal["chest", "back", "legs", "shoulders", "bicep", "tricep", "cardio", "core", "mixed"]
     sets: int
     reps: int
     notes: str | None = None

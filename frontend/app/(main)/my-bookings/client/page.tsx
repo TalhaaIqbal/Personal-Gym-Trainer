@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from '@/lib/axios'
 import { convert24To12 } from '@/lib/util'
+import { useRouter } from 'next/navigation'
 
 interface Booking {
     id: string
@@ -19,6 +20,7 @@ interface Booking {
 }
 
 export default function MyBookings() {
+    const router = useRouter()
     const [bookingInfo, setBookingInfo] = useState<Booking[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -79,7 +81,9 @@ export default function MyBookings() {
                         {bookingInfo.filter(b => b.status !== 'cancelled').map(booking => {
                             const trainer = booking.trainer_info;
                             return (
-                                <div key={booking.id} className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                                <div key={booking.id} 
+                                     className="cursor-pointer hover:scale-105 transition-transform bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
+                                     onClick={() => router.push(`/my-bookings/client/workout-plans?trainer_id=${booking.trainer_id}`)}>
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-white font-semibold text-lg">

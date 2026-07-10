@@ -2,6 +2,7 @@ from ..repositories.availability_repository import AvailabilityRepository
 from ..schemas.availability_schema import AvailabilityCreate, AvailabilityUpdate
 from datetime import date, time
 from datetime import datetime
+from fastapi import HTTPException, status
 
 class AvailabilityService:
     def __init__(self, repository: AvailabilityRepository, booking_repository = None) -> None:
@@ -105,7 +106,7 @@ class AvailabilityService:
                 )
                 
                 if pending_bookings or confirmed_bookings:
-                    return await { "error": "Cannot delete availability with existing bookings" }
+                    raise ValueError("Cannot delete availability with existing bookings")
             
             result = await self.repository.delete(availability_id)
             return result

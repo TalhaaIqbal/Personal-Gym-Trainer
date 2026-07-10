@@ -18,6 +18,10 @@ class WorkoutPlanService:
             data["start_date"] = data["start_date"].isoformat()
         if "end_date" in data and isinstance(data["end_date"], date):
             data["end_date"] = data["end_date"].isoformat()
+        if "days" in data and isinstance(data["days"], list):
+            for day in data["days"]:
+                if "date" in day and isinstance(day["date"], date):
+                    day["date"] = day["date"].isoformat()
         return data
 
     async def get_all_workout_plans(self):

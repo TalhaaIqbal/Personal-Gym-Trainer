@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 interface Exercise {
     name: string
+    muscle_groups: string[]
     sets: number
     reps: string
     weight?: string
@@ -21,6 +22,16 @@ interface Client {
     email: string
 }
 
+interface WorkoutDay {
+    date: string
+    is_rest_day: boolean
+    exercises: Exercise[]
+}
+
+const MUSCLE_GROUPS = [
+    'chest', 'back', 'legs', 'shoulders', 'bicep', 'tricep', 'cardio', 'core', 'mixed'
+] as const
+
 export default function WorkoutPlanBuilder() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -29,8 +40,8 @@ export default function WorkoutPlanBuilder() {
     const [description, setDescription] = useState('')
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
-    const [exercises, setExercises] = useState<Exercise[]>([
-        { name: '', sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' }
+    const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([
+        { date: '', is_rest_day: false, exercises: [{ name: '', muscle_groups: [], sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' }] }
     ])
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
@@ -56,20 +67,67 @@ export default function WorkoutPlanBuilder() {
         }
     }
 
-    const addExercise = () => {
-        setExercises([...exercises, { name: '', sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' }])
+    const addExercise = (dayIndex: number) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].exercises.push({ name: '', muscle_groups: [], sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' })
+        setWorkoutDays(updatedDays)
     }
 
-    const removeExercise = (index: number) => {
-        if (exercises.length > 1) {
-            setExercises(exercises.filter((_, i) => i !== index))
+    const removeExercise = (dayIndex: number, exerciseIndex: number) => {
+        const updatedDays = [...workoutDays]
+        if (updatedDays[dayIndex].exercises.length > 1) {
+            updatedDays[dayIndex].exercises = updatedDays[dayIndex].exercises.filter((_, i) => i !== exerciseIndex)
+            setWorkoutDays(updatedDays)
         }
     }
 
-    const updateExercise = (index: number, field: keyof Exercise, value: string | number) => {
-        const updatedExercises = [...exercises]
-        updatedExercises[index] = { ...updatedExercises[index], [field]: value }
-        setExercises(updatedExercises)
+    const updateExercise = (dayIndex: number, exerciseIndex: number, field: keyof Exercise, value: string | number | string[]) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], [field]: value }
+        setWorkoutDays(updatedDays)
+    }
+
+    const toggleMuscleGroup = (dayIndex: number, exerciseIndex: number, muscleGroup: string) => {
+        const updatedDays = [...workoutDays]
+        const currentGroups = updatedDays[dayIndex].exercises[exerciseIndex].muscle_groups
+        if (currentGroups.includes(muscleGroup)) {
+            updatedDays[dayIndex].exercises[exerciseIndex].muscle_groups = currentGroups.filter(g => g !== muscleGroup)
+        } else {
+            updatedDays[dayIndex].exercises[exerciseIndex].muscle_groups = [...currentGroups, muscleGroup]
+        }
+        setWorkoutDays(updatedDays)
+    }
+
+    const toggleRestDay = (dayIndex: number) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].is_rest_day = !updatedDays[dayIndex].is_rest_day
+        setWorkoutDays(updatedDays)
+    }
+
+    const updateDayDate = (dayIndex: number, date: string) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].date = date
+        setWorkoutDays(updatedDays)
+    }
+
+    const generateWorkoutDays = () => {
+        if (!startDate || !endDate) return
+        
+        const start = new Date(startDate)
+        const end = new Date(endDate)
+        const days: WorkoutDay[] = []
+        
+        const currentDate = new Date(start)
+        while (currentDate <= end) {
+            days.push({
+                date: currentDate.toISOString().split('T')[0],
+                is_rest_day: false,
+                exercises: [{ name: '', muscle_groups: [], sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' }]
+            })
+            currentDate.setDate(currentDate.getDate() + 1)
+        }
+        
+        setWorkoutDays(days)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -80,11 +138,19 @@ export default function WorkoutPlanBuilder() {
             return
         }
 
-        const validExercises = exercises.filter(ex => ex.name.trim() !== '')
-        if (validExercises.length === 0) {
-            alert('Please add at least one exercise')
+        const validDays = workoutDays.filter(day => 
+            day.is_rest_day || day.exercises.some(ex => ex.name.trim() !== '')
+        )
+        
+        if (validDays.length === 0) {
+            alert('Please add at least one workout day or rest day')
             return
         }
+
+        const daysWithExercises = validDays.map(day => ({
+            ...day,
+            exercises: day.is_rest_day ? [] : day.exercises.filter(ex => ex.name.trim() !== '')
+        }))
 
         setSubmitting(true)
 
@@ -93,7 +159,7 @@ export default function WorkoutPlanBuilder() {
                 client_id: client.id,
                 name: planName,
                 description: description || null,
-                exercises: validExercises,
+                days: daysWithExercises,
                 start_date: startDate,
                 end_date: endDate || null
             }
@@ -196,109 +262,171 @@ export default function WorkoutPlanBuilder() {
                                     />
                                 </div>
                             </div>
+                            {startDate && endDate && (
+                                <button
+                                    type="button"
+                                    onClick={generateWorkoutDays}
+                                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                                >
+                                    Generate Workout Days
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    {/* Exercises */}
+                    {/* Workout Days */}
                     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-white">Exercises</h2>
-                            <button
-                                type="button"
-                                onClick={addExercise}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                            >
-                                + Add Exercise
-                            </button>
+                            <h2 className="text-xl font-semibold text-white">Workout Days</h2>
+                            <span className="text-blue-200 text-sm">
+                                {workoutDays.length} day{workoutDays.length !== 1 ? 's' : ''} planned
+                            </span>
                         </div>
 
-                        {exercises.map((exercise, index) => (
-                            <div key={index} className="bg-white/5 rounded-lg p-4 mb-4 border border-white/10">
+                        {workoutDays.map((day, dayIndex) => (
+                            <div key={dayIndex} className="bg-white/5 rounded-lg p-4 mb-4 border border-white/10">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-medium text-white">Exercise {index + 1}</h3>
-                                    {exercises.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => removeExercise(index)}
-                                            className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-                                        >
-                                            Remove
-                                        </button>
-                                    )}
+                                    <div className="flex items-center gap-4">
+                                        <h3 className="text-lg font-medium text-white">Day {dayIndex + 1}</h3>
+                                        <input
+                                            type="date"
+                                            value={day.date}
+                                            onChange={(e) => updateDayDate(dayIndex, e.target.value)}
+                                            className="px-3 py-1 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleRestDay(dayIndex)}
+                                        className={`px-3 py-1 rounded-lg text-sm ${day.is_rest_day ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-gray-600 hover:bg-gray-700'} text-white`}
+                                    >
+                                        {day.is_rest_day ? 'Rest Day' : 'Workout Day'}
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-blue-200 mb-2">Exercise Name *</label>
-                                        <input
-                                            type="text"
-                                            value={exercise.name}
-                                            onChange={(e) => updateExercise(index, 'name', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., Bench Press"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-blue-200 mb-2">Sets *</label>
-                                        <input
-                                            type="number"
-                                            value={exercise.sets}
-                                            onChange={(e) => updateExercise(index, 'sets', parseInt(e.target.value))}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            min="1"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-blue-200 mb-2">Reps *</label>
-                                        <input
-                                            type="text"
-                                            value={exercise.reps}
-                                            onChange={(e) => updateExercise(index, 'reps', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., 10-12"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-blue-200 mb-2">Weight (Optional)</label>
-                                        <input
-                                            type="text"
-                                            value={exercise.weight}
-                                            onChange={(e) => updateExercise(index, 'weight', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., 135 lbs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-blue-200 mb-2">Duration (Optional)</label>
-                                        <input
-                                            type="text"
-                                            value={exercise.duration}
-                                            onChange={(e) => updateExercise(index, 'duration', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., 30 min"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-blue-200 mb-2">Rest Time (Optional)</label>
-                                        <input
-                                            type="text"
-                                            value={exercise.rest_time}
-                                            onChange={(e) => updateExercise(index, 'rest_time', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., 60s"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-blue-200 mb-2">Notes (Optional)</label>
-                                        <textarea
-                                            value={exercise.notes}
-                                            onChange={(e) => updateExercise(index, 'notes', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Any additional instructions..."
-                                            rows={2}
-                                        />
-                                    </div>
-                                </div>
+                                {!day.is_rest_day && (
+                                    <>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h4 className="text-md font-medium text-blue-200">Exercises</h4>
+                                            <button
+                                                type="button"
+                                                onClick={() => addExercise(dayIndex)}
+                                                className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                                            >
+                                                + Add Exercise
+                                            </button>
+                                        </div>
+
+                                        {day.exercises.map((exercise, exerciseIndex) => (
+                                            <div key={exerciseIndex} className="bg-white/5 rounded-lg p-4 mb-3 border border-white/10">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h5 className="text-sm font-medium text-white">Exercise {exerciseIndex + 1}</h5>
+                                                    {day.exercises.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeExercise(dayIndex, exerciseIndex)}
+                                                            className="px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-blue-200 mb-1 text-sm">Exercise Name *</label>
+                                                        <input
+                                                            type="text"
+                                                            value={exercise.name}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'name', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="e.g., Bench Press"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-blue-200 mb-1 text-sm">Muscle Groups *</label>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {MUSCLE_GROUPS.map((group) => (
+                                                                <button
+                                                                    key={group}
+                                                                    type="button"
+                                                                    onClick={() => toggleMuscleGroup(dayIndex, exerciseIndex, group)}
+                                                                    className={`px-3 py-1 rounded-lg text-xs capitalize ${
+                                                                        exercise.muscle_groups.includes(group)
+                                                                            ? 'bg-blue-600 text-white'
+                                                                            : 'bg-white/20 text-blue-200 hover:bg-white/30'
+                                                                    }`}
+                                                                >
+                                                                    {group}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-blue-200 mb-1 text-sm">Sets *</label>
+                                                        <input
+                                                            type="number"
+                                                            value={exercise.sets}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'sets', parseInt(e.target.value))}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            min="1"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-blue-200 mb-1 text-sm">Reps *</label>
+                                                        <input
+                                                            type="text"
+                                                            value={exercise.reps}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'reps', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="e.g., 10-12"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-blue-200 mb-1 text-sm">Weight (Optional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={exercise.weight}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'weight', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="e.g., 70 kg"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-blue-200 mb-1 text-sm">Duration (Optional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={exercise.duration}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'duration', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="e.g., 30 min"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-blue-200 mb-1 text-sm">Rest Time (Optional)</label>
+                                                        <input
+                                                            type="text"
+                                                            value={exercise.rest_time}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'rest_time', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="e.g., 60s"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-blue-200 mb-1 text-sm">Notes (Optional)</label>
+                                                        <textarea
+                                                            value={exercise.notes}
+                                                            onChange={(e) => updateExercise(dayIndex, exerciseIndex, 'notes', e.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg bg-white/20 text-white border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                                            placeholder="Any additional instructions..."
+                                                            rows={2}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
                             </div>
                         ))}
                     </div>

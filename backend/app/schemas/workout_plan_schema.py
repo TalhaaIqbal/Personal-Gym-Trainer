@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import date
-from typing import Literal, List
+from typing import Literal, List, Optional, Union
 
 def validate_date(date: date) -> None:
     if date < date.today():
@@ -8,20 +8,26 @@ def validate_date(date: date) -> None:
 
 class ExerciseCreate(BaseModel):
     name: str
+    muscle_groups: List[Literal["chest", "back", "legs", "shoulders", "bicep", "tricep", "cardio", "core", "mixed"]]
     sets: int
     reps: str
-    weight: str | None = None
-    duration: str | None = None
-    rest_time: str | None = None
-    notes: str | None = None
+    weight: Optional[str] = None
+    duration: Optional[str] = None
+    rest_time: Optional[str] = None
+    notes: Optional[str] = None
+
+class WorkoutDayCreate(BaseModel):
+    date: date
+    is_rest_day: bool = False
+    exercises: List[ExerciseCreate] = []
 
 class WorkoutPlanCreate(BaseModel):
     client_id: str
     name: str
-    description: str | None = None
-    exercises: List[ExerciseCreate]
+    description: Optional[str] = None
+    days: List[WorkoutDayCreate]
     start_date: date
-    end_date: date | None = None
+    end_date: Optional[date] = None
 
     @field_validator('start_date')
     def validate_start_date(cls, v):
@@ -41,21 +47,27 @@ class WorkoutPlanCreate(BaseModel):
         return self
 
 class ExerciseUpdate(BaseModel):
-    name: str | None = None
-    sets: int | None = None
-    reps: str | None = None
-    weight: str | None = None
-    duration: str | None = None
-    rest_time: str | None = None
-    notes: str | None = None
+    name: Optional[str] = None
+    muscle_groups: Optional[List[Literal["chest", "back", "legs", "shoulders", "bicep", "tricep", "cardio", "core", "mixed"]]]
+    sets: Optional[int] = None
+    reps: Optional[str] = None
+    weight: Optional[str] = None
+    duration: Optional[str] = None
+    rest_time: Optional[str] = None
+    notes: Optional[str] = None
+
+class WorkoutDayUpdate(BaseModel):
+    date: Optional[date] = None
+    is_rest_day: Optional[bool] = None
+    exercises: Optional[List[ExerciseUpdate]] = None
 
 class WorkoutPlanUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    exercises: List[ExerciseUpdate] | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    status: Literal["active", "completed", "archived"] | None = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    days: Optional[List[WorkoutDayUpdate]] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    status: Optional[Literal["active", "completed", "archived"]] = None
 
     @field_validator('start_date')
     def validate_start_date(cls, v):
@@ -77,20 +89,26 @@ class WorkoutPlanUpdate(BaseModel):
 
 class ExerciseResponse(BaseModel):
     name: str
+    muscle_groups: List[Literal["chest", "back", "legs", "shoulders", "bicep", "tricep", "cardio", "core", "mixed"]]
     sets: int
     reps: str
-    weight: str | None = None
-    duration: str | None = None
-    rest_time: str | None = None
-    notes: str | None = None
+    weight: Optional[str] = None
+    duration: Optional[str] = None
+    rest_time: Optional[str] = None
+    notes: Optional[str] = None
+
+class WorkoutDayResponse(BaseModel):
+    date: str
+    is_rest_day: bool
+    exercises: List[ExerciseResponse]
 
 class WorkoutPlanResponse(BaseModel):
     id: str
     trainer_id: str
     client_id: str
     name: str
-    description: str | None = None
-    exercises: List[ExerciseResponse]
+    description: Optional[str] = None
+    days: List[WorkoutDayResponse]
     start_date: str
-    end_date: str | None = None
+    end_date: Optional[str] = None
     status: Literal["active", "completed", "archived"] = "active"

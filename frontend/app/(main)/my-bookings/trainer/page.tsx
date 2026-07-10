@@ -88,9 +88,8 @@ export default function MyBookings() {
         try {
             await axios.delete(`/availability/${availabilityId}`)
             fetchData()
-        } catch (error) {
-            console.error('Error cancelling availability:', error)
-            alert('Failed to cancel availability')
+        } catch (error: any) {
+            alert(error.response.data.detail)
         }
     }
 
