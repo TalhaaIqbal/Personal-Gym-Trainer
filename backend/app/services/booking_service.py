@@ -1,11 +1,12 @@
 from ..repositories.booking_repository import BookingRepository
+from ..repositories.availability_repository import AvailabilityRepository
 from ..schemas.booking_schema import BookingCreate, BookingStatusUpdate
-from bson import ObjectId
 from datetime import date, time
 
 class BookingService:
-    def __init__(self, repository: BookingRepository) -> None:
+    def __init__(self, repository: BookingRepository, availability_repository: AvailabilityRepository) -> None:
         self.repository = repository
+        self.availability_repository = availability_repository
 
     def _convert_to_response(self, booking_doc: dict) -> dict:
         if not booking_doc:
@@ -39,14 +40,27 @@ class BookingService:
         return [self._convert_to_response(booking) for booking in bookings]
 
     async def get_bookings_by_trainer_id(self, trainer_id: str, status: str = None):
-        bookings = await self.repository.get_by_trainer_id_with_client_info(trainer_id)
+        bookings = await self.repository.get_by_trainer_id_with_client_info(trainer_id, status)
         return [self._convert_to_response(booking) for booking in bookings]
 
     async def create_booking(self, booking: BookingCreate, client_id: str):
         booking_dict = booking.model_dump()
         booking_dict["client_id"] = client_id
         booking_dict["status"] = "pending"
+        
         booking_dict = self._convert_datetime_to_string(booking_dict)
+        
+        # If availability_id is not provided, try to find matching availability
+        if not booking_dict.get("availability_id"):
+            availability = await self.availability_repository.find_by_trainer_date_time(
+                booking_dict["trainer_id"],
+                booking_dict["booking_date"],
+                booking_dict["start_time"],
+                booking_dict["end_time"]
+            )
+            if availability:
+                booking_dict["availability_id"] = str(availability["_id"])
+        
         result = await self.repository.create(booking_dict)
         return self._convert_to_response(result)
     

@@ -3,7 +3,7 @@ from ..repositories.workout_plan_repository import WorkoutPlanRepository
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorCollection
 from ..core.database import db
-from ..schemas.workout_plan_schema import WorkoutPlanCreate, WorkoutPlanUpdate, WorkoutPlanResponse, WorkoutPlanWithClientResponse
+from ..schemas.workout_plan_schema import WorkoutPlanCreate, WorkoutPlanUpdate, WorkoutPlanResponse
 from loguru import logger
 from ..core.middleware import get_current_admin, get_current_trainer, get_current_user
 
@@ -32,8 +32,8 @@ async def create_workout_plan(workout_plan: WorkoutPlanCreate,
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/trainer", response_model=list[WorkoutPlanWithClientResponse], dependencies=[Depends(get_current_trainer)])
-async def get_trainer_workout_plans(current_trainer = Depends(get_current_trainer),
+@router.get("/trainer", response_model=list[WorkoutPlanResponse], dependencies=[Depends(get_current_trainer)])
+async def get_trainer_workout_plans(summary = "Get trainers workout plans that he made himself for his clients",current_trainer = Depends(get_current_trainer),
                                      service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
         plans = await service.get_workout_plans_by_trainer(current_trainer["id"])
@@ -84,7 +84,7 @@ async def delete_workout_plan(plan_id: str, service: WorkoutPlanService = Depend
 #------------------------------Client routes------------------------------
 
 @router.get("/client", response_model=list[WorkoutPlanResponse], dependencies=[Depends(get_current_user)])
-async def get_client_workout_plans(current_user = Depends(get_current_user),
+async def get_client_workout_plans(summary = "Get Clients own workout plans", current_user = Depends(get_current_user),
                                    service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
         plans = await service.get_workout_plans_by_client(current_user["id"])

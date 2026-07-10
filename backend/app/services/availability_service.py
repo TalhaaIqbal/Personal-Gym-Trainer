@@ -90,6 +90,28 @@ class AvailabilityService:
         return self._convert_to_response(result)
     
     async def delete_availability(self, availability_id: str):
-        result = await self.repository.delete(availability_id)
-        return result
+        #Cannot delete availability if booking is already set on that timeslot
+        try: 
+            availability = await self.repository.get_by_id(availability_id)
+            if not availability:
+                return None
+            
+            if self.booking_repository:
+                pending_bookings = await self.booking_repository.get_by_availability_id(
+                    availability_id, status="pending"
+                )
+                confirmed_bookings = await self.booking_repository.get_by_availability_id(
+                    availability_id, status="confirmed"
+                )
+                
+                if pending_bookings or confirmed_bookings:
+                    return await { "error": "Cannot delete availability with existing bookings" }
+            
+            result = await self.repository.delete(availability_id)
+            return result
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
 

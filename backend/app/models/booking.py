@@ -13,6 +13,7 @@ PyProjectID = Annotated[str, BeforeValidator(validate_object_id)]
 class Booking(BaseModel):
     trainer_id: PyProjectID
     client_id: PyProjectID
+    availability_id: PyProjectID | None = None
     booking_date: date
     start_time: time
     end_time: time

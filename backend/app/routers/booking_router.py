@@ -1,5 +1,6 @@
 from ..services.booking_service import BookingService
 from ..repositories.booking_repository import BookingRepository
+from ..repositories.availability_repository import AvailabilityRepository
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorCollection
 from ..core.database import db
@@ -12,9 +13,16 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 def get_booking_collection() -> AsyncIOMotorCollection:
     return db["bookings"]
 
-def get_booking_service(collection: AsyncIOMotorCollection = Depends(get_booking_collection)) -> BookingService:
-    repository = BookingRepository(collection)
-    return BookingService(repository)
+def get_availability_collection() -> AsyncIOMotorCollection:
+    return db["availability"]
+
+def get_booking_service(
+    booking_collection: AsyncIOMotorCollection = Depends(get_booking_collection),
+    availability_collection: AsyncIOMotorCollection = Depends(get_availability_collection)
+) -> BookingService:
+    booking_repository = BookingRepository(booking_collection)
+    availability_repository = AvailabilityRepository(availability_collection)
+    return BookingService(booking_repository, availability_repository)
 
 
 #------------------------------Client routes------------------------------

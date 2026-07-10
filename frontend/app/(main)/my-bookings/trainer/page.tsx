@@ -27,11 +27,19 @@ interface Availability {
     end_time: string
 }
 
+interface WorkoutPlan {
+    id: string
+    client_id: string
+    trainer_id: string
+
+}
+
 export default function MyBookings() {
     const [bookings, setBookings] = useState<Booking[]>([])
-    const [availability, setAvailability] = useState<Availability[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState<'bookings' | 'availability'>('bookings')
+    const [availability, setAvailability] = useState<Availability[]>([])
+    const [workoutPlan, setWorkoutPlan] = useState([])  //for now any
 
     useEffect(() => {
         fetchData()
@@ -39,12 +47,14 @@ export default function MyBookings() {
 
     const fetchData = async () => {
         try {
-            const [bookingsResponse, availabilityResponse] = await Promise.all([
+            const [bookingsResponse, availabilityResponse, workoutPlanResponse] = await Promise.all([
                 axios.get('/bookings/trainer'),
-                axios.get('/availability/me')
+                axios.get('/availability/me'),
+                axios.get('/workout-plans/trainer')
             ])
             setBookings(bookingsResponse.data)
             setAvailability(availabilityResponse.data)
+            setWorkoutPlan(workoutPlanResponse.data)
         } catch (error) {
             console.error('Error fetching data:', error)
         } finally {
@@ -173,7 +183,7 @@ export default function MyBookings() {
                                                         </button>
                                                     </div>
                                                 )}
-                                                {booking.status === 'confirmed' && (
+                                                {booking.status === 'confirmed'  && (
                                                     <Link
                                                         href={`/workout-plan-builder?client_id=${booking.client_id}`}
                                                         className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"

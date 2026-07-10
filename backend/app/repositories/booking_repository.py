@@ -16,6 +16,12 @@ class BookingRepository(BaseRepository[Booking]):
     
     async def get_by_client_and_trainer(self, client_id: str, trainer_id: str):
         return await self.collection.find({"client_id": client_id, "trainer_id": trainer_id}).to_list(length=None)
+    
+    async def get_by_availability_id(self, availability_id: str, status: str = None):
+        query = {"availability_id": availability_id}
+        if status:
+            query["status"] = status
+        return await self.collection.find(query).to_list(length=None)
 
     async def get_by_client_id_with_trainer_info(self, client_id: str):
         pipeline = [
@@ -60,45 +66,58 @@ class BookingRepository(BaseRepository[Booking]):
         cursor = await self.collection.aggregate(pipeline) 
         return await cursor.to_list(length=None)
 
-    async def get_by_trainer_id_with_client_info(self, trainer_id: str):
+    async def get_by_trainer_id_with_client_info(self, trainer_id: str, status: str = None):
         pipeline = [
             {
-                "$match": {"trainer_id": trainer_id}
-            },
-            {
-                "$lookup": {  #Left join
-                    "from": "users",
-                    "let" : {
-                        "cid": "$client_id"
-                    },
-                    "pipeline": [  #Sub pipeline (or query)
-                        {
-                            "$match": {
-                                "$expr": {
-                                    "$eq": ["$_id", { #On users._id = booking.client_id
-                                        "$toObjectId": "$$cid" #Convert string to ObjectId
-                                    }]
-                                }
+                "$match": { #Match trainer_id
+                    "trainer_id": trainer_id
+                }
+            }
+        ]
 
-                            }
-                        },
-                        {
-                            "$project": { #get these 2 fields
-                                "name": 1,
-                                "email": 1
+        #Append the status match if it is provided
+        if status is not None:
+            pipeline.append({
+                "$match": {
+                    "status": status
+                }
+            })
+
+        pipeline.append({
+            "$lookup": { #Left Join
+                "from": "users",
+                "let": {
+                    "cid": "$client_id" #Assign client_id to cid
+                },
+                "pipeline": [
+                    {
+                        "$match": { #find user with matching _id
+                            "$expr": { #using expression to compare _id with client_id
+                                "$eq": [
+                                    "$_id", 
+                                    {"$toObjectId": "$$cid"} #convert to object before
+                                ]
                             }
                         }
-                    ],
-                    "as": "client_info"
-                }
-            },
-            {
-                "$unwind": {  #Flatten the client_info array into single object
-                    "path": "$client_info",
-                    "preserveNullAndEmptyArrays": True #No deletion of empty records
-                }
-            },
-        ]
+                    },
+                    {
+                        "$project": { #only keep below fields
+                            "name": 1,
+                            "email": 1
+                        }
+                    }
+                ],
+                "as": "client_info"
+            }
+        })
+
+        #flatten the array
+        pipeline.append({
+            "$unwind": {
+                "path": "$client_info",
+                "preserveNullAndEmptyArrays": True #No deletion of empty records
+            }
+        })
         
         cursor = await self.collection.aggregate(pipeline) 
         return await cursor.to_list(length=None) 

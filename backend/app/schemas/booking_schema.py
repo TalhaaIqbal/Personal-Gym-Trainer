@@ -16,6 +16,7 @@ def validate_time_overlap(start_time: time, end_time: time, existing_start: time
 
 class BookingCreate(BaseModel):
     trainer_id: str
+    availability_id: str | None =(None)
     booking_date: date
     start_time: time
     end_time: time
@@ -43,17 +44,20 @@ class BookingResponse(BaseModel):
     id: str
     trainer_id: str
     client_id: str
+    availability_id: str | None = None
     booking_date: date
     start_time: time
     end_time: time
     status: Literal["pending", "confirmed", "cancelled"] = "pending"
 
     @field_validator('booking_date')
+    @classmethod
     def validate_booking_date(cls, v):
         validate_date(v)
         return v
 
     @field_validator('start_time', 'end_time')
+    @classmethod
     def validate_time(cls, v):
         return v
 
@@ -75,6 +79,7 @@ class BookingWithTrainerResponse(BaseModel):
     id: str
     trainer_id: str
     client_id: str
+    availability_id: str | None = None
     booking_date: str
     start_time: str
     end_time: str
@@ -85,8 +90,11 @@ class BookingWithClientResponse(BaseModel):
     id: str
     trainer_id: str
     client_id: str
+    availability_id: str | None = None
     booking_date: str
     start_time: str
     end_time: str
     status: str
     client_info: ClientInfo | None = None
+    
+    model_config = {"validate_assignment": True}

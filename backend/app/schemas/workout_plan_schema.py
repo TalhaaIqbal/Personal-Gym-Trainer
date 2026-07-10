@@ -94,15 +94,3 @@ class WorkoutPlanResponse(BaseModel):
     start_date: str
     end_date: str | None = None
     status: Literal["active", "completed", "archived"] = "active"
-
-class WorkoutPlanWithClientResponse(BaseModel):
-    id: str
-    trainer_id: str
-    client_id: str
-    name: str
-    description: str | None = None
-    exercises: List[ExerciseResponse]
-    start_date: str
-    end_date: str | None = None
-    status: Literal["active", "completed", "archived"] = "active"
-    client_info: dict | None = None
