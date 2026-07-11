@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from bson import ObjectId
+from bson.objectid import ObjectId
 from .security import decode_access_token
 from .database import db
 from datetime import datetime, timezone

@@ -1,5 +1,5 @@
 from typing import Any, Dict, Generic, List, TypeVar
-from bson import ObjectId 
+from bson.objectid import ObjectId 
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 ModelType = TypeVar('ModelType', bound=dict)

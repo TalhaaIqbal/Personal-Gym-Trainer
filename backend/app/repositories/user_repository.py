@@ -1,6 +1,6 @@
 from .base import BaseRepository
 from ..models.user import User
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 class UserRepository(BaseRepository[User]):
     async def get_by_email(self, email: str):

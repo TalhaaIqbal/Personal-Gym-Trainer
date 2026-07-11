@@ -11,3 +11,4 @@ python-multipart==0.0.32
 python-dotenv==1.2.2
 boto3==1.43.45
 email-validator==2.3.0
+loguru==0.7.3

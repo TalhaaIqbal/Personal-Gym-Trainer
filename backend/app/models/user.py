@@ -1,6 +1,6 @@
 from pydantic import BaseModel, BeforeValidator
 from typing import Annotated, Literal
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 def validate_object_id(v: str) -> str:
     if ObjectId.is_valid(v):

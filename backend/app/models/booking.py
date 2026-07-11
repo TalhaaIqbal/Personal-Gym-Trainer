@@ -1,6 +1,6 @@
 from pydantic import BaseModel, BeforeValidator
 from typing import Annotated, Literal
-from bson import ObjectId
+from bson.objectid import ObjectId
 from datetime import date, time
 
 def validate_object_id(v: str) -> str:
