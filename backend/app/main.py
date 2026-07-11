@@ -8,7 +8,9 @@ from .core.database import client
 async def lifespan(app: FastAPI):
     try:
         await client.aconnect()
+        databases = await client.list_database_names()
         print("Connected to MongoDB")
+        print("Databases:", databases)
     except Exception as e:
         print(f"Failed to connect to MongoDB: {e}")
     yield
