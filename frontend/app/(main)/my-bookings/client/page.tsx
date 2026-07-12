@@ -23,9 +23,12 @@ export default function MyBookings() {
     const router = useRouter()
     const [bookingInfo, setBookingInfo] = useState<Booking[]>([])
     const [loading, setLoading] = useState(true)
+    const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false)
+    const [googleCalendarEnabled, setGoogleCalendarEnabled] = useState(false)
 
     useEffect(() => {
         fetchBookings();
+        checkCalendarStatus();
     }, [])
 
     const fetchBookings = async () => {
@@ -37,6 +40,38 @@ export default function MyBookings() {
             console.error('Error fetching bookings:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const checkCalendarStatus = async () => {
+        try {
+            const response = await axios.get('/auth/google/status')
+            setGoogleCalendarConnected(response.data.connected)
+            setGoogleCalendarEnabled(response.data.calendar_enabled)
+        } catch (error) {
+            console.error('Error checking calendar status:', error)
+        }
+    }
+
+    const handleConnectCalendar = async () => {
+        try {
+            const response = await axios.get('/auth/google/authorize')
+            window.location.href = response.data.authorization_url
+        } catch (error) {
+            console.error('Error connecting calendar:', error)
+            alert('Failed to connect Google Calendar')
+        }
+    }
+
+    const handleDisconnectCalendar = async () => {
+        try {
+            await axios.delete('/auth/google/disconnect')
+            setGoogleCalendarConnected(false)
+            setGoogleCalendarEnabled(false)
+            alert('Google Calendar disconnected successfully')
+        } catch (error) {
+            console.error('Error disconnecting calendar:', error)
+            alert('Failed to disconnect Google Calendar')
         }
     }
 
@@ -73,6 +108,37 @@ export default function MyBookings() {
         <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 p-4">
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-3xl font-bold text-white mb-6">My Bookings</h1>
+
+                <div className="mb-6 bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                    <h3 className="text-white font-semibold text-lg mb-4">Google Calendar Integration</h3>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-blue-200 text-sm">
+                                {googleCalendarConnected 
+                                    ? 'Google Calendar is connected' 
+                                    : 'Connect your Google Calendar to sync bookings automatically'}
+                            </p>
+                            {googleCalendarConnected && googleCalendarEnabled && (
+                                <p className="text-green-400 text-xs mt-1">✓ Sync enabled</p>
+                            )}
+                        </div>
+                        {googleCalendarConnected ? (
+                            <button
+                                onClick={handleDisconnectCalendar}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                            >
+                                Disconnect
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleConnectCalendar}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                            >
+                                Connect Calendar
+                            </button>
+                        )}
+                    </div>
+                </div>
 
                 {bookingInfo.length === 0 ? (
                     <p className="text-white">No bookings yet</p>

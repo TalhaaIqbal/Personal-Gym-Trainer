@@ -1,5 +1,5 @@
 from pydantic import BaseModel, BeforeValidator
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 from bson.objectid import ObjectId
 from datetime import date, time
 
@@ -18,3 +18,4 @@ class Booking(BaseModel):
     start_time: time
     end_time: time
     status: Literal["pending", "confirmed", "cancelled"] = "pending"
+    google_event_id: Optional[str] = None

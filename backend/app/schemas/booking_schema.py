@@ -49,6 +49,7 @@ class BookingResponse(BaseModel):
     start_time: time
     end_time: time
     status: Literal["pending", "confirmed", "cancelled"] = "pending"
+    google_event_id: str | None = None
 
     @field_validator('booking_date')
     @classmethod
@@ -85,6 +86,7 @@ class BookingWithTrainerResponse(BaseModel):
     end_time: str
     status: str
     trainer_info: TrainerInfo | None = None
+    google_event_id: str | None = None
 
 class BookingWithClientResponse(BaseModel):
     id: str
@@ -96,5 +98,6 @@ class BookingWithClientResponse(BaseModel):
     end_time: str
     status: str
     client_info: ClientInfo | None = None
+    google_event_id: str | None = None
     
     model_config = {"validate_assignment": True}
