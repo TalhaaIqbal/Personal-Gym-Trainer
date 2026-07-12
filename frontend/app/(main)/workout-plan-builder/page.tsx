@@ -84,19 +84,19 @@ function WorkoutPlanBuilderContent() {
     }
 
     const updateExercise = (dayIndex: number, exerciseIndex: number, field: keyof Exercise, value: string | number | string[]) => {
-        const updatedDays = [...workoutDays]
+        const updatedDays = [...workoutDays];
         updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], [field]: value }
         setWorkoutDays(updatedDays)
     }
 
     const handleVideoSelect = (dayIndex: number, exerciseIndex: number, file: File) => {
-        const updatedDays = [...workoutDays]
+        const updatedDays = [...workoutDays];
         updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], video_file: file }
         setWorkoutDays(updatedDays)
     }
 
     const handleRemoveVideo = (dayIndex: number, exerciseIndex: number) => {
-        const updatedDays = [...workoutDays]
+        const updatedDays = [...workoutDays];
         updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], video_file: undefined }
         setWorkoutDays(updatedDays)
     }
