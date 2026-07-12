@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+const API_URL = 'http://127.0.0.1:8000' || process.env.NEXT_PUBLIC_API_URL 
+
 const axiosInstance = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,7 +34,7 @@ axiosInstance.interceptors.response.use(
           throw new Error('No refresh token')
         }
 
-        const response = await axios.post('http://127.0.0.1:8000/auth/refresh', {
+        const response = await axios.post(`${API_URL}/auth/refresh`, {
           refresh_token: refreshToken
         })
 
@@ -45,8 +47,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
-        
-        // Only redirect to login if not on home page
+
         if (window.location.pathname !== '/') {
           window.location.href = '/login'
         }
@@ -58,4 +59,4 @@ axiosInstance.interceptors.response.use(
   }
 )
 
-export default axiosInstance;
+export default axiosInstance

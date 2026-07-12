@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import axios from '@/lib/axios'
@@ -13,6 +14,7 @@ interface Exercise {
     duration?: string
     rest_time?: string
     notes?: string
+    video_key?: string
 }
 
 interface WorkoutDay {
@@ -33,12 +35,14 @@ interface WorkoutPlan {
     status: string
 }
 
-export default function MyWorkoutPlans() {
+function MyWorkoutPlansContent() {
     const searchParams = useSearchParams()
     const trainerId = searchParams.get('trainer_id')
     const [plans, setPlans] = useState<WorkoutPlan[]>([])
     const [loading, setLoading] = useState(true)
     const [expandedPlan, setExpandedPlan] = useState<string | null>(null)
+    const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
+    const [expandedVideo, setExpandedVideo] = useState<string | null>(null)
 
     useEffect(() => {
         fetchPlans()
@@ -55,6 +59,31 @@ export default function MyWorkoutPlans() {
             console.error('Error fetching workout plans:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchVideoUrl = async (videoKey: string) => {
+        if (videoUrls[videoKey]) {
+            return videoUrls[videoKey]
+        }
+
+        try {
+            const response = await axios.get(`/videos/workout-video/${videoKey}`)
+            const url = response.data.url
+            setVideoUrls(prev => ({ ...prev, [videoKey]: url }))
+            return url
+        } catch (error) {
+            console.error('Error fetching video URL:', error)
+            return null
+        }
+    }
+
+    const handleWatchVideo = async (videoKey: string) => {
+        if (expandedVideo === videoKey) {
+            setExpandedVideo(null)
+        } else {
+            await fetchVideoUrl(videoKey)
+            setExpandedVideo(videoKey)
         }
     }
 
@@ -140,6 +169,28 @@ export default function MyWorkoutPlans() {
                                                                 {exercise.notes && (
                                                                     <p className="text-blue-300 text-xs mt-2 italic">{exercise.notes}</p>
                                                                 )}
+                                                                {exercise.video_key && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleWatchVideo(exercise.video_key!)}
+                                                                            className="mt-2 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs"
+                                                                        >
+                                                                            {expandedVideo === exercise.video_key ? 'Hide Video' : 'Watch Video'}
+                                                                        </button>
+                                                                        {expandedVideo === exercise.video_key && videoUrls[exercise.video_key] && (
+                                                                            <div className="mt-3">
+                                                                                <video
+                                                                                    controls
+                                                                                    className="w-full rounded-lg"
+                                                                                    style={{ maxHeight: '300px' }}
+                                                                                >
+                                                                                    <source src={videoUrls[exercise.video_key]} type="video/mp4" />
+                                                                                    Your browser does not support the video tag.
+                                                                                </video>
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         ))}
                                                     </div>
@@ -158,5 +209,17 @@ export default function MyWorkoutPlans() {
                 )}
             </div>
         </section>
+    )
+}
+
+export default function MyWorkoutPlans() {
+    return (
+        <Suspense fallback={
+            <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
+                <p className="text-white text-xl">Loading...</p>
+            </section>
+        }>
+            <MyWorkoutPlansContent />
+        </Suspense>
     )
 }

@@ -1,6 +1,7 @@
 from functools import lru_cache
 import os
 import boto3
+from botocore.config import Config
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,16 +16,24 @@ def initiate_s3_client(role: str):
         app_key = os.getenv("B2_VIEWER_APPLICATION_KEY")
     else:
         raise ValueError("Invalid role specified. Use 'uploader' or 'viewer'.")
-
-    s3_client = boto3.client(
-        "s3",
-        endpoint_url=os.getenv("B2_ENDPOINT"),
-        aws_access_key_id=key_id,
-        aws_secret_access_key=app_key,
-        region_name=os.getenv("B2_REGION"),
-    )
     
-    return s3_client
+    endpoint = os.getenv("B2_ENDPOINT")
+    if endpoint and not endpoint.startswith("http"):
+        endpoint = f"https://{endpoint}"
+    
+    try:
+        s3_client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=key_id,
+            aws_secret_access_key=app_key,
+            region_name=os.getenv("B2_REGION"),
+            config=Config(signature_version='s3v4')
+        )
+        return s3_client
+    except Exception as e:
+        print(f"Error creating S3 client: {e}")
+        raise
 
 def upload_video(local_path, target_key):
     """Uses the uploader client to push a video file."""

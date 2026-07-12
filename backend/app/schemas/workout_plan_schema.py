@@ -1,6 +1,6 @@
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import date
-from typing import Literal, List, Optional, Union
+from typing import Literal, List, Optional
 
 def validate_date(date: date) -> None:
     if date < date.today():
@@ -15,6 +15,7 @@ class ExerciseCreate(BaseModel):
     duration: Optional[str] = None
     rest_time: Optional[str] = None
     notes: Optional[str] = None
+    video_key: Optional[str] = None
 
 class WorkoutDayCreate(BaseModel):
     date: date
@@ -55,6 +56,7 @@ class ExerciseUpdate(BaseModel):
     duration: Optional[str] = None
     rest_time: Optional[str] = None
     notes: Optional[str] = None
+    video_key: Optional[str] = None
 
 class WorkoutDayUpdate(BaseModel):
     date: Optional[date] = None
@@ -96,6 +98,7 @@ class ExerciseResponse(BaseModel):
     duration: Optional[str] = None
     rest_time: Optional[str] = None
     notes: Optional[str] = None
+    video_key: Optional[str] = None
 
 class WorkoutDayResponse(BaseModel):
     date: str

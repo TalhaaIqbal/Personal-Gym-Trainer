@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile
 import uuid
 import os
 from ..core.backblaze.b2_client import initiate_s3_client
@@ -10,39 +10,45 @@ router = APIRouter(prefix="/videos", tags=["videos"])
 BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
 
 
-@router.post("/presign-upload", dependencies=[Depends(get_current_trainer)])
-def get_presigned_upload_url(payload: UploadRequest):
+@router.post("/workout-video/upload", dependencies=[Depends(get_current_trainer)])
+async def upload_workout_video(file: UploadFile):
     try:
-        file_key = f"videos/{uuid.uuid4()}-{payload.filename}"
+        file_key = f"workout-videos/{uuid.uuid4()}-{file.filename}"
+        print(f"Uploading video: {file_key}")
 
         client = initiate_s3_client(role="uploader")
-        presigned_url = client.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": BUCKET_NAME,
-                "Key": file_key,
-                "ContentType": payload.content_type,
-            },
-            ExpiresIn=3600,
+        
+        file_content = await file.read()
+        
+        # Uploading to B2
+        client.put_object(
+            Bucket=BUCKET_NAME,
+            Key=file_key,
+            Body=file_content,
+            ContentType=file.content_type or 'video/mp4'
         )
-
+        
+        print(f"Successfully uploaded: {file_key}")
+        
         return {
-            "upload_url": presigned_url,
-            "file_key": file_key,
+            "video_key": file_key,
+            "message": "Video uploaded successfully"
         }
     except Exception as e:
+        print(f"Error uploading video: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/presign-download/{file_key:path}", dependencies=[Depends(get_current_user)])
-def get_presigned_download_url(file_key: str):
+@router.get("/workout-video/{video_key:path}", dependencies=[Depends(get_current_user)])
+def get_workout_video_watch_url(video_key: str):
     try:
         client = initiate_s3_client(role="viewer")
         url = client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": BUCKET_NAME, "Key": file_key},
+            Params={"Bucket": BUCKET_NAME, "Key": video_key},
             ExpiresIn=3600,
         )
+        print("url: ", url)
         return {"url": url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

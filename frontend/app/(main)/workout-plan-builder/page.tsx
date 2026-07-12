@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from '@/lib/axios'
@@ -14,6 +15,7 @@ interface Exercise {
     duration?: string
     rest_time?: string
     notes?: string
+    video_file?: File
 }
 
 interface Client {
@@ -32,7 +34,7 @@ const MUSCLE_GROUPS = [
     'chest', 'back', 'legs', 'shoulders', 'bicep', 'tricep', 'cardio', 'core', 'mixed'
 ] as const
 
-export default function WorkoutPlanBuilder() {
+function WorkoutPlanBuilderContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const [client, setClient] = useState<Client | null>(null)
@@ -87,6 +89,31 @@ export default function WorkoutPlanBuilder() {
         setWorkoutDays(updatedDays)
     }
 
+    const handleVideoSelect = (dayIndex: number, exerciseIndex: number, file: File) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], video_file: file }
+        setWorkoutDays(updatedDays)
+    }
+
+    const handleRemoveVideo = (dayIndex: number, exerciseIndex: number) => {
+        const updatedDays = [...workoutDays]
+        updatedDays[dayIndex].exercises[exerciseIndex] = { ...updatedDays[dayIndex].exercises[exerciseIndex], video_file: undefined }
+        setWorkoutDays(updatedDays)
+    }
+
+    const uploadVideo = async (file: File): Promise<string> => {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const response = await axios.post('/videos/workout-video/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+
+        return response.data.video_key
+    }
+
     const toggleMuscleGroup = (dayIndex: number, exerciseIndex: number, muscleGroup: string) => {
         const updatedDays = [...workoutDays]
         const currentGroups = updatedDays[dayIndex].exercises[exerciseIndex].muscle_groups
@@ -112,11 +139,11 @@ export default function WorkoutPlanBuilder() {
 
     const generateWorkoutDays = () => {
         if (!startDate || !endDate) return
-        
+
         const start = new Date(startDate)
         const end = new Date(endDate)
         const days: WorkoutDay[] = []
-        
+
         const currentDate = new Date(start)
         while (currentDate <= end) {
             days.push({
@@ -126,43 +153,67 @@ export default function WorkoutPlanBuilder() {
             })
             currentDate.setDate(currentDate.getDate() + 1)
         }
-        
+
         setWorkoutDays(days)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        
+
         if (!client || !planName || !startDate) {
             alert('Please fill in all required fields')
             return
         }
 
-        const validDays = workoutDays.filter(day => 
-            day.is_rest_day || day.exercises.some(ex => ex.name.trim() !== '')
+        const validDays = workoutDays.filter(day =>
+            day.date && (day.is_rest_day || day.exercises.some(ex => ex.name.trim() !== ''))
         )
-        
+
         if (validDays.length === 0) {
-            alert('Please add at least one workout day or rest day')
+            alert('Please add at least one workout day with a date')
             return
         }
 
         const daysWithExercises = validDays.map(day => ({
             ...day,
-            exercises: day.is_rest_day ? [] : day.exercises.filter(ex => ex.name.trim() !== '')
+            exercises: day.is_rest_day ? [] : day.exercises
+                .filter(ex => ex.name.trim() !== '')
+                .map(ex => ({
+                    ...ex,
+                    weight: ex.weight || undefined,
+                    duration: ex.duration || undefined,
+                    notes: ex.notes || undefined,
+                    video_file: ex.video_file || undefined
+                }))
         }))
 
         setSubmitting(true)
 
         try {
+            // Upload videos first and get video keys
+            const daysWithVideoKeys = await Promise.all(
+                daysWithExercises.map(async (day) => ({
+                    ...day,
+                    exercises: await Promise.all(
+                        day.exercises.map(async (exercise) => ({
+                            ...exercise,
+                            video_key: exercise.video_file ? await uploadVideo(exercise.video_file) : undefined,
+                            video_file: undefined
+                        }))
+                    )
+                }))
+            )
+
             const workoutPlan = {
                 client_id: client.id,
                 name: planName,
                 description: description || null,
-                days: daysWithExercises,
+                days: daysWithVideoKeys,
                 start_date: startDate,
                 end_date: endDate || null
             }
+
+            console.log('Sending workout plan:', JSON.stringify(workoutPlan, null, 2))
 
             await axios.post('/workout-plans', workoutPlan)
             alert('Workout plan created successfully!')
@@ -351,11 +402,10 @@ export default function WorkoutPlanBuilder() {
                                                                     key={group}
                                                                     type="button"
                                                                     onClick={() => toggleMuscleGroup(dayIndex, exerciseIndex, group)}
-                                                                    className={`px-3 py-1 rounded-lg text-xs capitalize ${
-                                                                        exercise.muscle_groups.includes(group)
+                                                                    className={`px-3 py-1 rounded-lg text-xs capitalize ${exercise.muscle_groups.includes(group)
                                                                             ? 'bg-blue-600 text-white'
                                                                             : 'bg-white/20 text-blue-200 hover:bg-white/30'
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     {group}
                                                                 </button>
@@ -422,6 +472,40 @@ export default function WorkoutPlanBuilder() {
                                                             rows={2}
                                                         />
                                                     </div>
+                                                    <div className="md:col-span-2">
+                                                        <label className="block text-blue-200 mb-1 text-sm">Exercise Video (Optional)</label>
+                                                        {!exercise.video_file ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="file"
+                                                                    accept="video/*"
+                                                                    onChange={(e) => {
+                                                                        const file = e.target.files?.[0]
+                                                                        if (file) handleVideoSelect(dayIndex, exerciseIndex, file)
+                                                                    }}
+                                                                    className="hidden"
+                                                                    id={`video-upload-${dayIndex}-${exerciseIndex}`}
+                                                                />
+                                                                <label
+                                                                    htmlFor={`video-upload-${dayIndex}-${exerciseIndex}`}
+                                                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 cursor-pointer text-sm"
+                                                                >
+                                                                    Select Video
+                                                                </label>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                                                <span className="text-green-400 text-sm">✓ {exercise.video_file.name}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveVideo(dayIndex, exerciseIndex)}
+                                                                    className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
+                                                                >
+                                                                    Remove
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
@@ -450,5 +534,17 @@ export default function WorkoutPlanBuilder() {
                 </form>
             </div>
         </section>
+    )
+}
+
+export default function WorkoutPlanBuilder() {
+    return (
+        <Suspense fallback={
+            <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+                <p className="text-white text-xl">Loading...</p>
+            </section>
+        }>
+            <WorkoutPlanBuilderContent />
+        </Suspense>
     )
 }
