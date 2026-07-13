@@ -62,13 +62,13 @@ export default function Hero({ user }: { user: any }) {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  href="/(auth)/login"
+                  href="/login"
                   className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg"
                 >
                   Login
                 </Link>
                 <Link
-                  href="/(auth)/register"
+                  href="/register"
                   className="px-8 py-4 bg-white/10 backdrop-blur-md text-white font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 border border-white/20"
                 >
                   Sign Up
