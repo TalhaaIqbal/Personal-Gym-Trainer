@@ -17,19 +17,17 @@ async def upload_workout_video(file: UploadFile):
         print(f"Uploading video: {file_key}")
 
         client = initiate_s3_client(role="uploader")
-        
-        file_content = await file.read()
-        
-        # Uploading to B2
-        client.put_object(
-            Bucket=BUCKET_NAME,
-            Key=file_key,
-            Body=file_content,
-            ContentType=file.content_type or 'video/mp4'
+
+        # Stream upload to avoid loading entire file into memory
+        client.upload_fileobj(
+            file.file,
+            BUCKET_NAME,
+            file_key,
+            ExtraArgs={'ContentType': file.content_type or 'video/mp4'}
         )
-        
+
         print(f"Successfully uploaded: {file_key}")
-        
+
         return {
             "video_key": file_key,
             "message": "Video uploaded successfully"
