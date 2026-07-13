@@ -32,8 +32,8 @@ class AvailabilityService:
 
     async def get_availabilities_by_trainer_id(self, trainer_id: str):
         availability_list = await self.repository.get_all_availabilities_by_trainer_id(trainer_id)
-        return [self._convert_to_response(availability) for availability in availability_list]
-
+        return [self._convert_to_response(availability) for availability in availability_list if availability.booking_date >= datetime.now().date()]
+        
     async def get_available_slots_for_client(self, trainer_id: str):
         if not self.booking_repository:
             return await self.get_availabilities_by_trainer_id(trainer_id)

@@ -73,13 +73,18 @@ async def delete_availability(availability_id: str, service: AvailabilityService
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.get("/me", response_model=list[AvailabilityResponse], dependencies=[Depends(get_current_trainer)])
-async def get_my_availability(current_user = Depends(get_current_trainer), 
+@router.get("/me", response_model=list[AvailabilityResponse])
+async def get_my_availability(current_user = Depends(get_current_trainer),
                               service: AvailabilityService = Depends(get_availability_service)):
     try:
+        print(f"Getting availability for trainer: {current_user.get('id')}")
         availability = await service.get_availabilities_by_trainer_id(str(current_user.get("id")))
+        print(f"Found {len(availability)} availability slots")
         return availability
     except Exception as e:
+        print(f"Error getting availability: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
 

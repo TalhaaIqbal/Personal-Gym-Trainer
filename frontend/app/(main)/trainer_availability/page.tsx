@@ -12,6 +12,7 @@ export default function TrainerAvailability() {
     const [loading, setLoading] = useState(true)
     const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set())
     const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set())
+    const [futureBookingSlots, setFutureBookingSlots] = useState<Set<string>[]>([new Set()])
 
     const START_HOUR = 6  
     const END_HOUR = 21 
@@ -38,10 +39,10 @@ export default function TrainerAvailability() {
 
     const fetchBookedSlots = async () => {
         try {
-            const response = await axios.get('/availability/me')
+            const response = await axios.get(`/availability/${currentUser?.id}`)
             const availabilities = response.data
             console.log("availabilities", availabilities);
-
+            
             const booked = new Set<string>()
             if (Array.isArray(availabilities)) {
                 availabilities.forEach((availability: any) => {
@@ -50,8 +51,9 @@ export default function TrainerAvailability() {
                     booked.add(key)
                 })
             }
+            setBookedSlots(booked);
 
-            setBookedSlots(booked)
+            setFutureBookingSlots(futureBookingSlots);
         } catch (error) {
             console.error("Error fetching booked slots:", error)
         } finally {
