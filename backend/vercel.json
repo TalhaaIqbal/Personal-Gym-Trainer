@@ -3,7 +3,8 @@
     { "src": "/(.*)", "dest": "app/main.py" }
   ],
   "functions": {
-    "app/main.py": {
+    "**/*.py": {
+      "runtime": "@vercel/python",
       "maxDuration": 60
     }
   }
