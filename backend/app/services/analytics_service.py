@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any
 from collections import defaultdict
 
+PER_SESSION_COST = 2500
+
 class AnalyticsService:
     def __init__(self):
         self.bookings_collection = db["bookings"]
@@ -28,7 +30,6 @@ class AnalyticsService:
             pending_bookings = len([b for b in all_bookings if b.get("status") == "pending"])
             cancelled_bookings = len([b for b in all_bookings if b.get("status") == "cancelled"])
             
-            # Calculate completion rate
             completion_rate = (confirmed_bookings / total_bookings * 100) if total_bookings > 0 else 0
             
             # Get bookings from last 30 days
@@ -53,7 +54,6 @@ class AnalyticsService:
             raise
 
     async def get_booking_trends(self, trainer_id: str, days: int = 30) -> List[Dict[str, Any]]:
-        """Get booking trends over time."""
         try:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
@@ -72,7 +72,6 @@ class AnalyticsService:
                 status = booking.get("status", "pending")
                 daily_bookings[booking_date][status] += 1
             
-            # Convert to sorted list
             trends = []
             for date in sorted(daily_bookings.keys()):
                 trends.append({
@@ -89,16 +88,13 @@ class AnalyticsService:
             raise
 
     async def get_client_stats(self, trainer_id: str) -> List[Dict[str, Any]]:
-        """Get statistics for each client."""
         try:
             all_bookings = await self.booking_repository.get_by_trainer_id(trainer_id)
             
-            # Group bookings by client
             client_bookings = defaultdict(list)
             for booking in all_bookings:
                 client_bookings[booking["client_id"]].append(booking)
             
-            # Calculate stats for each client
             client_stats = []
             for client_id, bookings in client_bookings.items():
                 client = await self.user_repository.get_by_id(client_id)
@@ -109,7 +105,7 @@ class AnalyticsService:
                 completed_sessions = len([b for b in bookings if b.get("status") == "confirmed"])
                 cancelled_sessions = len([b for b in bookings if b.get("status") == "cancelled"])
                 
-                # Get last booking date
+                # Get last booking date (max = latest)
                 last_booking = max(bookings, key=lambda b: b["booking_date"]) if bookings else None
                 last_session_date = last_booking["booking_date"] if last_booking else None
                 
@@ -124,7 +120,6 @@ class AnalyticsService:
                     "last_session_date": last_session_date
                 })
             
-            # Sort by total sessions descending
             client_stats.sort(key=lambda x: x["total_sessions"], reverse=True)
             
             return client_stats
@@ -133,7 +128,6 @@ class AnalyticsService:
             raise
 
     async def get_time_slot_analysis(self, trainer_id: str) -> List[Dict[str, Any]]:
-        """Analyze popularity of different time slots."""
         try:
             all_bookings = await self.booking_repository.get_by_trainer_id(trainer_id)
             
@@ -144,7 +138,6 @@ class AnalyticsService:
                     hour = int(booking["start_time"].split(":")[0])
                     hour_bookings[hour] += 1
             
-            # Convert to list
             time_slots = []
             for hour in sorted(hour_bookings.keys()):
                 time_slots.append({
@@ -159,7 +152,6 @@ class AnalyticsService:
             raise
 
     async def get_monthly_revenue(self, trainer_id: str, months: int = 6) -> List[Dict[str, Any]]:
-        """Get monthly revenue trends (placeholder - assumes $50 per session)."""
         try:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=30 * months)
@@ -176,7 +168,7 @@ class AnalyticsService:
             for booking in filtered_bookings:
                 booking_date = datetime.strptime(booking["booking_date"], "%Y-%m-%d")
                 month_key = booking_date.strftime("%Y-%m")
-                monthly_revenue[month_key] += 50  # Assuming $50 per session
+                monthly_revenue[month_key] += PER_SESSION_COST
             
             # Convert to sorted list
             revenue_trends = []
@@ -184,7 +176,7 @@ class AnalyticsService:
                 revenue_trends.append({
                     "month": month,
                     "revenue": monthly_revenue[month],
-                    "sessions": monthly_revenue[month] // 50
+                    "sessions": monthly_revenue[month] // PER_SESSION_COST
                 })
             
             return revenue_trends

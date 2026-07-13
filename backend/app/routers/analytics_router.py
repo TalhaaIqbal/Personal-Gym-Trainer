@@ -12,7 +12,6 @@ async def get_trainer_overview(
     current_user = Depends(get_current_trainer),
     service: AnalyticsService = Depends(get_analytics_service)
 ):
-    """Get overview analytics for the current trainer."""
     try:
         overview = await service.get_trainer_overview(current_user["id"])
         return overview
@@ -26,7 +25,6 @@ async def get_booking_trends(
     current_user = Depends(get_current_trainer),
     service: AnalyticsService = Depends(get_analytics_service)
 ):
-    """Get booking trends over time."""
     try:
         trends = await service.get_booking_trends(current_user["id"], days)
         return trends
@@ -39,7 +37,6 @@ async def get_client_stats(
     current_user = Depends(get_current_trainer),
     service: AnalyticsService = Depends(get_analytics_service)
 ):
-    """Get statistics for each client."""
     try:
         stats = await service.get_client_stats(current_user["id"])
         return stats
@@ -52,7 +49,6 @@ async def get_time_slot_analysis(
     current_user = Depends(get_current_trainer),
     service: AnalyticsService = Depends(get_analytics_service)
 ):
-    """Analyze popularity of different time slots."""
     try:
         analysis = await service.get_time_slot_analysis(current_user["id"])
         return analysis
@@ -66,7 +62,6 @@ async def get_monthly_revenue(
     current_user = Depends(get_current_trainer),
     service: AnalyticsService = Depends(get_analytics_service)
 ):
-    """Get monthly revenue trends."""
     try:
         revenue = await service.get_monthly_revenue(current_user["id"], months)
         return revenue

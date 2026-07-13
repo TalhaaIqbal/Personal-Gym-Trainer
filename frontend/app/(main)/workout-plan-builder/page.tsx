@@ -213,7 +213,6 @@ function WorkoutPlanBuilderContent() {
                 end_date: endDate || null
             }
 
-            console.log('Sending workout plan:', JSON.stringify(workoutPlan, null, 2))
 
             await axios.post('/workout-plans', workoutPlan)
             alert('Workout plan created successfully!')

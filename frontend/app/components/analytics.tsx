@@ -136,7 +136,7 @@ export default function TrainerAnalytics() {
                   title="Completion Rate" 
                   value={`${overview.completion_rate}%`} 
                   subtitle={`${overview.confirmed_bookings} confirmed`}
-                  color="bg-gradient-to-br from-purple-600 to-purple-700"
+                  color="bg-gradient-to-br from-blue-600 to-blue-700"
                 />
                 <StatCard 
                   title="Upcoming Sessions" 
@@ -243,14 +243,14 @@ export default function TrainerAnalytics() {
                       <span className="text-white font-bold">{new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
                       <span className="text-blue-200 ml-4">{month.sessions} sessions</span>
                     </div>
-                    <span className="text-green-400 text-2xl font-bold">${month.revenue}</span>
+                    <span className="text-green-400 text-2xl font-bold">Rs {month.revenue}</span>
                   </div>
                 ))}
               </div>
               <div className="mt-6 pt-6 border-t border-white/20">
                 <div className="flex justify-between items-center">
                   <span className="text-blue-200">Total Revenue (6 months)</span>
-                  <span className="text-white text-3xl font-bold">${revenueData.reduce((sum, m) => sum + m.revenue, 0)}</span>
+                  <span className="text-white text-3xl font-bold">Rs {revenueData.reduce((sum, m) => sum + m.revenue, 0)}</span>
                 </div>
               </div>
             </div>
