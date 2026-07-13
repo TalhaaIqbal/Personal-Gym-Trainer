@@ -5,7 +5,7 @@ from ..core.backblaze.b2_client import initiate_s3_client
 from ..core.middleware import get_current_trainer, get_current_user
 from ..schemas.file_schema import UploadRequest
 
-router = APIRouter(prefix="/videos", tags=["videos"])
+router = APIRouter(prefix="/videos", tags=["Videos"])
 
 BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
 

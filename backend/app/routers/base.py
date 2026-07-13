@@ -6,6 +6,7 @@ from .booking_router import router as booking_router
 from .workout_plan_router import router as workout_plan_router
 from .file_router import router as file_router
 from .google_auth_router import router as google_auth_router
+from .analytics_router import router as analytics_router
 
 router = APIRouter()
 
@@ -16,3 +17,4 @@ router.include_router(booking_router)
 router.include_router(workout_plan_router)
 router.include_router(file_router)
 router.include_router(google_auth_router)
+router.include_router(analytics_router)

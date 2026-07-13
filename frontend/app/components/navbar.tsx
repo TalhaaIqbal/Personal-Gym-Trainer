@@ -85,15 +85,6 @@ export default function Navbar() {
                   </li>
                 </>
               )}
-              <li>
-                <Link href="#" className={linkClass("#")}>Services</Link>
-              </li>
-              <li>
-                <Link href="#" className={linkClass("#")}>Pricing</Link>
-              </li>
-              <li>
-                <Link href="#" className={linkClass("#")}>Contact</Link>
-              </li>
             </ul>
           </div>
         </div>
