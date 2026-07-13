@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import axios from '@/lib/axios'
 
 interface Exercise {
@@ -36,6 +36,7 @@ interface WorkoutPlan {
 }
 
 function MyWorkoutPlansContent() {
+    const router = useRouter();
     const searchParams = useSearchParams()
     const trainerId = searchParams.get('trainer_id')
     const [plans, setPlans] = useState<WorkoutPlan[]>([])
@@ -50,7 +51,7 @@ function MyWorkoutPlansContent() {
 
     const fetchPlans = async () => {
         try {
-            const url = trainerId 
+            const url = trainerId
                 ? `/workout-plans/client?trainer_id=${trainerId}`
                 : '/workout-plans/client'
             const response = await axios.get(url)
@@ -106,26 +107,38 @@ function MyWorkoutPlansContent() {
                     <div className="space-y-6">
                         {plans.map(plan => (
                             <div key={plan.id} className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center justify-between mb-2">
                                     <div>
                                         <h2 className="text-2xl font-bold text-white">{plan.name}</h2>
                                         {plan.description && (
                                             <p className="text-blue-200 mt-1">{plan.description}</p>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        {expandedPlan === plan.id ? 'Hide Details' : 'Show Details'}
-                                    </button>
                                 </div>
 
-                                <div className="text-blue-200 text-sm mb-4">
-                                    <p>Start Date: {plan.start_date}</p>
-                                    {plan.end_date && <p>End Date: {plan.end_date}</p>}
-                                    <p>Status: {plan.status}</p>
+                                <div className="flex items-center justify-between">
+                                    <div className="text-blue-200 text-sm mb-4">
+                                        <p>Start Date: {plan.start_date}</p>
+                                        {plan.end_date && <p>End Date: {plan.end_date}</p>}
+                                        <p>Status: {plan.status}</p>
+                                    </div>
+                                    <div className="flex flex-col space-y-2">
+                                        <button
+                                            onClick={() => setExpandedPlan(expandedPlan === plan.id ? null : plan.id)}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            {expandedPlan === plan.id ? 'Hide Details' : 'Show Details'}
+                                        </button>
+                                        <button
+                                            onClick={() => router.push(`/my-bookings/client/workout-plans/${plan.id}`)}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                        >
+                                            Start Workout
+                                        </button>
+                                    </div>
                                 </div>
+
+
 
                                 {expandedPlan === plan.id && (
                                     <div className="mt-4 space-y-3">
