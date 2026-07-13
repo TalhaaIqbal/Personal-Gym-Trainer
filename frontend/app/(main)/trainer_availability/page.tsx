@@ -38,10 +38,10 @@ export default function TrainerAvailability() {
 
     const fetchBookedSlots = async () => {
         try {
-            const response = await axios.get(`/availability/${currentUser?.id}`)
+            const response = await axios.get('/availability/me')
             const availabilities = response.data
             console.log("availabilities", availabilities);
-            
+
             const booked = new Set<string>()
             if (Array.isArray(availabilities)) {
                 availabilities.forEach((availability: any) => {
@@ -50,7 +50,7 @@ export default function TrainerAvailability() {
                     booked.add(key)
                 })
             }
-            
+
             setBookedSlots(booked)
         } catch (error) {
             console.error("Error fetching booked slots:", error)

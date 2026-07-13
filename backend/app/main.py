@@ -1,5 +1,4 @@
 from .routers import base
-from .routers import google_auth_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -34,7 +33,6 @@ app.add_middleware(
 )
 
 app.include_router(base.router)
-app.include_router(google_auth_router.router)
 
 @app.get("/")
 def root():
