@@ -105,12 +105,12 @@ async def google_callback(request: Request, code: str = None, state: str = None,
         logger.info(f"Using redirect URI: {redirect_uri}")
 
         # Exchange authorization code for credentials with code verifier
+        logger.info("Attempting to fetch token with code verifier")
         flow.fetch_token(code=code, code_verifier=code_verifier)
         credentials = flow.credentials
 
         token_json = credentials.to_json()
-
-        print("OAuth callback received, token obtained")
+        logger.info("OAuth callback received, token obtained successfully")
 
         await db["temp_oauth_verifiers"].delete_one({"_id": verifier_record["_id"]})
 
