@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Navbar from '../../../../../components/navbar'
 import axios from '@/lib/axios'
 import process from 'process'
+import { DNA } from 'react-loader-spinner'
 
 interface Exercise {
     name: string
@@ -197,7 +198,7 @@ export default function ProgressLogger() {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
                         <h1 className="text-3xl font-bold text-white">
-                            {loadingPlan ? 'Loading...' : workoutPlan?.name || 'Workout Plan'}
+                            {loadingPlan ? <DNA visible={true} height="40" width="40" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" /> : workoutPlan?.name || 'Workout Plan'}
                         </h1>
                         <div className="flex gap-2">
                             <button
@@ -222,7 +223,7 @@ export default function ProgressLogger() {
                         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
                             <h2 className="text-xl font-semibold text-white mb-4">Workout Plan</h2>
                             {loadingPlan ? (
-                                <p className="text-blue-200">Loading workout plan...</p>
+                                <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
                             ) : workoutPlan ? (
                                 <>
                                     {workoutPlan.description && (

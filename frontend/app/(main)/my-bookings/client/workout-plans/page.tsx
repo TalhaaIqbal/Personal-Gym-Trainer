@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import axios from '@/lib/axios'
+import { DNA } from 'react-loader-spinner'
 
 interface Exercise {
     name: string
@@ -91,7 +92,7 @@ function MyWorkoutPlansContent() {
     if (loading) {
         return (
             <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
-                <p className="text-white text-xl">Loading...</p>
+                <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
             </section>
         )
     }
@@ -229,7 +230,7 @@ export default function MyWorkoutPlans() {
     return (
         <Suspense fallback={
             <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center">
-                <p className="text-white text-xl">Loading...</p>
+                <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
             </section>
         }>
             <MyWorkoutPlansContent />

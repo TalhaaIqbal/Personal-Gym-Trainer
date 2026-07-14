@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import axios from '@/lib/axios'
 import { convert24To12 } from '@/lib/util'
 import Link from 'next/link'
+import { DNA } from 'react-loader-spinner'
 
 interface Booking {
     id: string
@@ -167,7 +168,7 @@ export default function MyBookings() {
     if (loading) {
         return (
             <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
-                <p className="text-white text-xl">Loading...</p>
+                <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
             </section>
         )
     }

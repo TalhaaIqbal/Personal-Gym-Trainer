@@ -6,6 +6,7 @@ import Hero from "./components/hero"
 import Logout from "./components/logout"
 import Analytics from "./components/analytics"
 import axios from '@/lib/axios'
+import { DNA } from 'react-loader-spinner'
 
 export default function Home() {
   const [userRole, setUserRole] = useState<any | null>(null)
@@ -30,7 +31,7 @@ export default function Home() {
       <>
         <Navbar />
         <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
-          <p className="text-white text-xl">Loading...</p>
+          <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
         </section>
       </>
     )

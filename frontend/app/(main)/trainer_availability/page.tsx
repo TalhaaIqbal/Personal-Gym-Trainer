@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import axios from '@/lib/axios'
 import { useRouter } from 'next/navigation'
 import Navbar from '../../components/navbar'
+import { DNA } from 'react-loader-spinner'
 
 
 export default function TrainerAvailability() {
@@ -169,7 +170,7 @@ export default function TrainerAvailability() {
             <>
                 <Navbar />
                 <section className="pt-20 min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
-                    <p className="text-white text-xl">Loading availability...</p>
+                    <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />
                 </section>
             </>
         )

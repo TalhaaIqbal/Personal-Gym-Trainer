@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import axios from '@/lib/axios'
 import { useRouter } from 'next/navigation'
+import { DNA } from 'react-loader-spinner'
 
 interface Availability {
     id: string
@@ -124,7 +125,7 @@ export default function BookSession() {
                     </div>
 
                     {/* Display Availability */}
-                    {loading && <p className="text-white text-center">Loading availability...</p>}
+                    {loading && <DNA visible={true} height="80" width="80" ariaLabel="dna-loading" wrapperStyle={{}} wrapperClass="dna-wrapper" />}
 
                     {availability.length > 0 && (
                         <div className="mb-6 p-4 bg-blue-600/30 rounded-lg border border-blue-400/30">
