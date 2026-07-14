@@ -1,3 +1,5 @@
+from datetime import date, time
+
 def validate_date(date: date) -> None:
     if date < date.today():
         raise ValueError("Date cannot be in the past")
