@@ -35,8 +35,7 @@ def initiate_s3_client(role: str):
         print(f"Error creating S3 client: {e}")
         raise
 
-def upload_video(local_path, target_key):
-    """Uses the uploader client to push a video file."""
+def upload_video(local_path, target_key):  #uploader client to push vid file (uploader key)
     client = initiate_s3_client(role="uploader")
     bucket = os.getenv("B2_BUCKET_NAME")
     
@@ -48,8 +47,7 @@ def upload_video(local_path, target_key):
     )
     print(f"Uploaded successfully to {target_key}")
 
-def generate_watch_link(video_key, expires_in_seconds=3600):
-    """Uses the viewer client to create a temporary streaming link."""
+def generate_watch_link(video_key, expires_in_seconds=3600): #viewer client to generate watch link (viewer key)
     client = initiate_s3_client(role="viewer")
     bucket = os.getenv("B2_BUCKET_NAME")
     
