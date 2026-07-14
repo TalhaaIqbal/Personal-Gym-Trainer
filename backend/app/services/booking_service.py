@@ -2,36 +2,13 @@ from ..repositories.booking_repository import BookingRepository
 from ..repositories.availability_repository import AvailabilityRepository
 from ..schemas.booking_schema import BookingCreate, BookingStatusUpdate
 from .google_calendar_service import GoogleCalendarSyncService
-from datetime import date, time
+from .base import BaseService
 
-class BookingService:
+class BookingService(BaseService):
     def __init__(self, repository: BookingRepository, availability_repository: AvailabilityRepository) -> None:
         self.repository = repository
         self.availability_repository = availability_repository
         self.calendar_sync_service = GoogleCalendarSyncService()
-
-    def _convert_to_response(self, booking_doc: dict) -> dict:
-        if not booking_doc:
-            return None
-        booking_doc["id"] = str(booking_doc.pop("_id"))
-        return booking_doc
-
-    def _convert_datetime_to_string(self, data: dict) -> dict:
-        if "booking_date" in data and isinstance(data["booking_date"], date):
-            data["booking_date"] = data["booking_date"].isoformat()
-        if "start_time" in data and isinstance(data["start_time"], time):
-            data["start_time"] = data["start_time"].isoformat()
-        if "end_time" in data and isinstance(data["end_time"], time):
-            data["end_time"] = data["end_time"].isoformat()
-        return data
-
-    async def get_all_bookings(self):
-        bookings = await self.repository.find_all()
-        return [self._convert_to_response(booking) for booking in bookings]
-
-    async def get_booking_by_id(self, booking_id: str):
-        booking = await self.repository.get_by_id(booking_id)
-        return self._convert_to_response(booking)
 
     async def get_available_bookings(self):
         bookings = await self.repository.get_available_bookings()

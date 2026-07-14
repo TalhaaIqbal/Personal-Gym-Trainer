@@ -63,7 +63,7 @@ async def list_clients(current_user: dict = Depends(get_current_user),
 async def get_user(user_id: str, service: UserService = Depends(get_user_service)):
     try:
         print(f"Getting user with ID: {user_id}")
-        user = await service.get_user_by_id(user_id)
+        user = await service.get_by_id(user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return user
@@ -79,7 +79,7 @@ async def get_user(user_id: str, service: UserService = Depends(get_user_service
 @router.get("/", response_model=list[UserResponse], dependencies=[Depends(get_current_admin)])
 async def get_users(service: UserService = Depends(get_user_service)):
     try:
-        return await service.get_all_users()
+        return await service.get_all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

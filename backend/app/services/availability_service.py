@@ -1,38 +1,17 @@
+from .base import BaseService
 from ..repositories.availability_repository import AvailabilityRepository
 from ..schemas.availability_schema import AvailabilityCreate, AvailabilityUpdate
-from datetime import date, time
 from datetime import datetime
 from fastapi import HTTPException, status
 
-class AvailabilityService:
+class AvailabilityService(BaseService):
     def __init__(self, repository: AvailabilityRepository, booking_repository = None) -> None:
         self.repository = repository
         self.booking_repository = booking_repository
 
-    def _convert_to_response(self, availability_doc: dict) -> dict:
-        if not availability_doc:
-            return None
-        if "_id" in availability_doc:
-            availability_doc["id"] = str(availability_doc.pop("_id"))
-        return availability_doc
-
-    def _convert_datetime_to_string(self, data: dict) -> dict:
-        if "booking_date" in data and isinstance(data["booking_date"], date):
-            data["booking_date"] = data["booking_date"].isoformat()
-        if "start_time" in data and isinstance(data["start_time"], time):
-            data["start_time"] = data["start_time"].isoformat()
-        if "end_time" in data and isinstance(data["end_time"], time):
-            data["end_time"] = data["end_time"].isoformat()
-        return data
-
-
-    async def get_all_availabilities(self):
-        availabilities = await self.repository.find_all()
-        return [self._convert_to_response(availability) for availability in availabilities]
-
     async def get_availabilities_by_trainer_id(self, trainer_id: str):
         availability_list = await self.repository.get_all_availabilities_by_trainer_id(trainer_id)
-        return [self._convert_to_response(availability) for availability in availability_list if (datetime.strptime(availability["booking_date"], "%Y-%m-%d").date()) >= datetime.now().date()]
+        return [self._convert_to_response(availability) for availability in availability_list]
         
     async def get_available_slots_for_client(self, trainer_id: str):
         if not self.booking_repository:
@@ -57,7 +36,7 @@ class AvailabilityService:
             if slot not in booked_slots:
                 available_slots.append(availability)
         
-        return [self._convert_to_response(availability) for availability in available_slots]
+        return [self._convert_to_response(availability) for availability in available_slots if (datetime.strptime(availability["booking_date"], "%Y-%m-%d").date()) >= datetime.now().date()]
 
     async def create_availability(self, availability: AvailabilityCreate):
         # Check for overlapping slots
@@ -98,7 +77,7 @@ class AvailabilityService:
                 return None
             
             if self.booking_repository:
-                pending_bookings = await self.booking_repository.get_by_availability_id(
+                pending_bookings = await self.booking_repository(
                     availability_id, status="pending"
                 )
                 confirmed_bookings = await self.booking_repository.get_by_availability_id(

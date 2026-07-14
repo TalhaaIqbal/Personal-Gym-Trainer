@@ -120,7 +120,7 @@ async def get_available_slots(trainer_id: str, service: AvailabilityService = De
 @router.get("/", response_model=list[AvailabilityResponse], dependencies=[Depends(get_current_admin)])
 async def get_availabilities(service: AvailabilityService = Depends(get_availability_service)):
     try:
-        return await service.get_all_availabilities()
+        return await service.get_all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

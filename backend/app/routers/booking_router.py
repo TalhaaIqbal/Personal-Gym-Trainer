@@ -92,7 +92,7 @@ async def delete_booking(booking_id: str, service: BookingService = Depends(get_
 @router.get("/", response_model=list[BookingResponse], dependencies=[Depends(get_current_admin)])
 async def get_all_bookings(service: BookingService = Depends(get_booking_service)):
     try:
-        return await service.get_all_bookings()
+        return await service.get_all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

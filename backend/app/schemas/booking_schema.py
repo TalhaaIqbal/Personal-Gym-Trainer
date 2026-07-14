@@ -1,103 +1,82 @@
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, ConfigDict
 from datetime import date, time
 from typing import Literal
+from ..helper.date_time_validate import validate_date, validate_time_order
 
-def validate_date(date: date) -> None:
-    if date < date.today():
-        raise ValueError("Date cannot be in the past")
-
-def validate_time_order(start_time: time, end_time: time) -> None:
-    if start_time >= end_time:
-        raise ValueError("Start time must be before end time")
-
-def validate_time_overlap(start_time: time, end_time: time, existing_start: time, existing_end: time) -> None:
-    if start_time < existing_end and end_time > existing_start:
-        raise ValueError("Time slot overlaps with existing availability")
-
-class BookingCreate(BaseModel):
+class BookingBase(BaseModel):
     trainer_id: str
-    availability_id: str | None =(None)
+    availability_id: str | None = None
     booking_date: date
     start_time: time
     end_time: time
-
+    
     @field_validator('booking_date')
+    @classmethod 
     def validate_booking_date(cls, v):
         validate_date(v)
         return v
 
-    @field_validator('start_time', 'end_time')
-    def validate_time(cls, v):
-        return v
-
     @model_validator(mode='after')
-    def validate_time_order(self):
+    def validate_time_range(self):  
         validate_time_order(self.start_time, self.end_time)
         return self
+    
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="forbid",        
+        str_strip_whitespace=True 
+    )
+
+
+class BookingResponseBase(BaseModel):
+    trainer_id: str
+    availability_id: str | None = None
+    booking_date: date
+    start_time: time
+    end_time: time
+    id: str
+    client_id: str
+    status: Literal["pending", "confirmed", "cancelled"] = "pending"
+    google_event_id: str | None = None
+    
+    @model_validator(mode='after')
+    def validate_time_range(self):  
+        validate_time_order(self.start_time, self.end_time)
+        return self
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingCreate(BookingBase):
+    pass
 
 
 class BookingStatusUpdate(BaseModel):
     status: Literal["pending", "confirmed", "cancelled"]
-
-
-class BookingResponse(BaseModel):
-    id: str
-    trainer_id: str
-    client_id: str
-    availability_id: str | None = None
-    booking_date: date
-    start_time: time
-    end_time: time
-    status: Literal["pending", "confirmed", "cancelled"] = "pending"
-    google_event_id: str | None = None
-
-    @field_validator('booking_date')
-    @classmethod
-    def validate_booking_date(cls, v):
-        validate_date(v)
-        return v
-
-    @field_validator('start_time', 'end_time')
-    @classmethod
-    def validate_time(cls, v):
-        return v
-
-    @model_validator(mode='after')
-    def validate_time_order(self):
-        validate_time_order(self.start_time, self.end_time)
-        return self
     
+    model_config = ConfigDict(extra="forbid") 
+
+
+class BookingResponse(BookingResponseBase):
+    pass
+
 
 class TrainerInfo(BaseModel):
     name: str
     email: str
+    model_config = ConfigDict(from_attributes=True) 
 
 class ClientInfo(BaseModel):
     name: str
     email: str
+    model_config = ConfigDict(from_attributes=True)
 
-class BookingWithTrainerResponse(BaseModel):
-    id: str
-    trainer_id: str
-    client_id: str
-    availability_id: str | None = None
-    booking_date: str
-    start_time: str
-    end_time: str
-    status: str
+
+class BookingWithTrainerResponse(BookingResponseBase):
     trainer_info: TrainerInfo | None = None
-    google_event_id: str | None = None
+    model_config = ConfigDict(from_attributes=True)
 
-class BookingWithClientResponse(BaseModel):
-    id: str
-    trainer_id: str
-    client_id: str
-    availability_id: str | None = None
-    booking_date: str
-    start_time: str
-    end_time: str
-    status: str
+
+class BookingWithClientResponse(BookingResponseBase):
     client_info: ClientInfo | None = None
-    google_event_id: str | None = None
-    
-    model_config = {"validate_assignment": True}
+    model_config = ConfigDict(from_attributes=True)

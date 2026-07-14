@@ -1,29 +1,10 @@
+from .base import BaseService
 from ..repositories.user_repository import UserRepository
 from ..schemas.user_schema import UserCreate, UserUpdate
 
-class UserService:
+class UserService(BaseService):
     def __init__(self, repository: UserRepository) -> None:
         self.repository = repository
-
-    def _convert_to_response(self, user_doc: dict) -> dict:
-        if not user_doc:
-            return None
-        user_doc["id"] = str(user_doc.pop("_id"))
-        return user_doc
-
-    async def get_all_users(self):
-        users = await self.repository.find_all()
-        return [self._convert_to_response(user) for user in users]
-
-    async def get_user_by_id(self, user_id: str):
-        try:
-            user = await self.repository.get_by_id(user_id)
-            print("User:", user)
-            if not user:
-                return None
-        except Exception:
-            return None
-        return self._convert_to_response(user)
 
     async def get_user_by_email(self, email: str):
         return await self.repository.get_by_email(email)

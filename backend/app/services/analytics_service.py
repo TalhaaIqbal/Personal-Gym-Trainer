@@ -20,7 +20,6 @@ class AnalyticsService:
             # Get all bookings for trainer
             all_bookings = await self.booking_repository.get_by_trainer_id(trainer_id)
             
-            # Get all clients
             client_ids = list(set([b["client_id"] for b in all_bookings]))
             total_clients = len(client_ids)
             

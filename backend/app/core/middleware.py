@@ -4,8 +4,10 @@ from bson.objectid import ObjectId
 from .security import decode_access_token
 from .database import db
 from datetime import datetime, timezone
+from typing import Literal
 
 bearer_scheme = HTTPBearer()
+
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
     credentials_exception = HTTPException(
@@ -46,18 +48,23 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
     user["id"] = str(user.pop("_id"))
     return user
 
-async def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
-    if current_user.get("role") != "admin":
+
+async def _require_role(current_user: dict, required_role: Literal["admin", "trainer", "client"]) -> dict:
+    if current_user.get("role") != required_role:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
+            detail=f"{required_role.capitalize()}s only",
         )
     return current_user
 
+
+async def get_current_admin(current_user: dict = Depends(get_current_user)) -> dict:
+    return await _require_role(current_user, "admin")
+
+
 async def get_current_trainer(current_user: dict = Depends(get_current_user)) -> dict:
-    if current_user.get("role") != "trainer":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Trainers only",
-        )
-    return current_user
+    return await _require_role(current_user, "trainer")
+
+
+async def get_current_client(current_user: dict = Depends(get_current_user)) -> dict:
+    return await _require_role(current_user, "client")

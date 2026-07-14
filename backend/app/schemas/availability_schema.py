@@ -1,35 +1,28 @@
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, ConfigDict
 from datetime import date, time
+from typing import Self
+from ..helper.date_time_validate import validate_date, validate_time_order
 
-def validate_date(date: date) -> None:
-    if date < date.today():
-        raise ValueError("Date cannot be in the past")
-
-def validate_time_order(start_time: time, end_time: time) -> None:
-    if start_time >= end_time:
-        raise ValueError("Start time must be before end time")
-
-def validate_time_overlap(start_time: time, end_time: time, existing_start: time, existing_end: time) -> None:
-    if start_time < existing_end and end_time > existing_start:
-        raise ValueError("Time slot overlaps with existing availability")
-
-
-class AvailabilityCreate(BaseModel):
+class AvailabilityBase(BaseModel):
     trainer_id: str
     booking_date: date
     start_time: time
     end_time: time
-
+    
     @field_validator('booking_date')
     @classmethod
-    def validate_date(cls, v: date) -> date:
+    def check_booking_date(cls, v: date) -> date:
         validate_date(v)
         return v
 
     @model_validator(mode='after')
-    def validate_time_order(self) -> 'AvailabilityCreate':
+    def check_time_order(self) -> Self:
         validate_time_order(self.start_time, self.end_time)
         return self
+
+
+class AvailabilityCreate(AvailabilityBase):
+    pass
 
 
 class AvailabilityUpdate(BaseModel):
@@ -39,32 +32,19 @@ class AvailabilityUpdate(BaseModel):
 
     @field_validator('booking_date')
     @classmethod
-    def validate_date(cls, v: date) -> date:
-        validate_date(v)
+    def check_booking_date(cls, v: date | None) -> date | None:
+        if v is not None:
+            validate_date(v)
         return v
 
     @model_validator(mode='after')
-    def validate_time_order(self) -> 'AvailabilityUpdate':
-        if self.start_time and self.end_time:
+    def check_time_order(self) -> Self:
+        if self.start_time is not None and self.end_time is not None:
             validate_time_order(self.start_time, self.end_time)
         return self
 
 
-
-class AvailabilityResponse(BaseModel):
+class AvailabilityResponse(AvailabilityBase): 
     id: str
-    trainer_id: str
-    booking_date: date
-    start_time: time
-    end_time: time
 
-    @field_validator('booking_date')
-    @classmethod
-    def validate_date(cls, v: date) -> date:
-        validate_date(v)
-        return v
-
-    @model_validator(mode='after')
-    def validate_time_order(self) -> 'AvailabilityResponse':
-        validate_time_order(self.start_time, self.end_time)
-        return self
+    model_config = ConfigDict(from_attributes=True)

@@ -72,7 +72,7 @@ async def update_workout_plan(plan_id: str,
 @router.delete("/{plan_id}", dependencies=[Depends(get_current_trainer)])
 async def delete_workout_plan(plan_id: str, service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
-        deleted = await service.delete_workout_plan(plan_id)
+        deleted = await service.delete(plan_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Workout plan not found")
         return {"message": "Workout plan deleted successfully"}
@@ -102,7 +102,7 @@ async def get_client_workout_plans(summary = "Get Clients own workout plans",
 @router.get("/{plan_id}", response_model=WorkoutPlanResponse, dependencies=[Depends(get_current_user)])
 async def get_workout_plan(plan_id: str, service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
-        plan = await service.get_workout_plan_by_id(plan_id)
+        plan = await service.get_by_id(plan_id)
         if not plan:
             raise HTTPException(status_code=404, detail="Workout plan not found")
         return plan
@@ -117,6 +117,6 @@ async def get_workout_plan(plan_id: str, service: WorkoutPlanService = Depends(g
 @router.get("/", response_model=list[WorkoutPlanResponse], dependencies=[Depends(get_current_admin)])
 async def get_all_workout_plans(service: WorkoutPlanService = Depends(get_workout_plan_service)):
     try:
-        return await service.get_all_workout_plans()
+        return await service.get_all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
