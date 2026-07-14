@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     @property
-    def MONGO_URL(self):
+    def mongo_url_encoded(self):
         return urllib.parse.quote_plus(self.MONGO_URL)
     
     class Config:

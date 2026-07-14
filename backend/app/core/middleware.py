@@ -36,7 +36,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
 
     try:
         user = await db["users"].find_one({"_id": ObjectId(user_id)})
-    except Exception:
+    except (ValueError, TypeError):
         raise credentials_exception
 
     if user is None:

@@ -31,20 +31,17 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None) -> 
 
 #-----------------Token Decoding-----------------
 
-def decode_access_token(token: str) -> dict | None:
+def decode_token(token: str, token_type: str) -> dict | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[HASHING_ALGORITHM])
-        if payload.get("jti") is None or payload.get("type") != "access":
+        if payload.get("jti") is None or payload.get("type") != token_type:
             return None
         return payload
     except JWTError:
         return None
 
+def decode_access_token(token: str) -> dict | None:
+    return decode_token(token, "access")
+
 def decode_refresh_token(token: str) -> dict | None:
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[HASHING_ALGORITHM])
-        if payload.get("jti") is None or payload.get("type") != "refresh":
-            return None
-        return payload
-    except JWTError:
-        return None
+    return decode_token(token, "refresh")
