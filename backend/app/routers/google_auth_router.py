@@ -10,6 +10,9 @@ import json
 import secrets
 import hashlib
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/google", tags=["Google Auth"])
 
@@ -56,8 +59,22 @@ async def google_authorize(current_user = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/callback")
-async def google_callback(code: str, state: str = None):
+async def google_callback(request: Request, code: str = None, state: str = None, error: str = None):
     try:
+        logger.info(f"Google callback received - Code: {code is not None}, Error: {error}, State: {state}")
+        logger.info(f"Request URL: {request.url}")
+        
+        # Handle OAuth error from Google
+        if error:
+            logger.error(f"OAuth error from Google: {error}")
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error&message={error}")
+
+        if not code:
+            logger.error("No authorization code received from Google")
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error&message=no_code")
+
         # Get the most recent code verifier
         verifier_record = await db["temp_oauth_verifiers"].find_one(
             {},
@@ -77,7 +94,7 @@ async def google_callback(code: str, state: str = None):
             return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error")
 
         code_verifier = verifier_record["code_verifier"]
-        print(f"Using code verifier for user: {verifier_record.get('user_id')}")
+        logger.info(f"Using code verifier for user: {verifier_record.get('user_id')}")
 
         calendar_service = GoogleCalendarService()
         flow = calendar_service.get_flow()
@@ -85,6 +102,7 @@ async def google_callback(code: str, state: str = None):
         # Set redirect URI for the flow
         redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
         flow.redirect_uri = redirect_uri
+        logger.info(f"Using redirect URI: {redirect_uri}")
 
         # Exchange authorization code for credentials with code verifier
         flow.fetch_token(code=code, code_verifier=code_verifier)
@@ -113,7 +131,8 @@ async def google_callback(code: str, state: str = None):
         traceback.print_exc()
         # Redirect to frontend with error
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-        return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error")
+        error_message = str(e) if e else "Unknown error"
+        return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error&message={error_message}")
 
 @router.post("/complete-auth")
 async def complete_auth(request: Request, current_user = Depends(get_current_user), calendar_tokens_collection: AsyncIOMotorCollection = Depends(get_calendar_tokens_collection)):
