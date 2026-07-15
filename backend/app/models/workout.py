@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import date, time
+from typing import List, Literal
 from ..helper.object_id_validate import PyProjectID
 
 class Exercise(BaseModel):
