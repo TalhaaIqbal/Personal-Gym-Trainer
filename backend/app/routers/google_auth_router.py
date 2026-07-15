@@ -25,7 +25,6 @@ async def google_authorize(current_user = Depends(get_current_user)):
         calendar_service = GoogleCalendarService()
         flow = calendar_service.get_flow()
 
-        # Set redirect URI for the flow
         redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
         flow.redirect_uri = redirect_uri
 
@@ -42,7 +41,6 @@ async def google_authorize(current_user = Depends(get_current_user)):
             "expires_at": datetime.now() + timedelta(minutes=5)
         })
 
-        # Generate authorization URL with code challenge
         auth_url, _ = flow.authorization_url(
             access_type='offline',
             include_granted_scopes='true',
@@ -64,7 +62,6 @@ async def google_callback(request: Request, code: str = None, state: str = None,
         logger.info(f"Google callback received - Code: {code is not None}, Error: {error}, State: {state}")
         logger.info(f"Request URL: {request.url}")
         
-        # Handle OAuth error from Google
         if error:
             logger.error(f"OAuth error from Google: {error}")
             frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -86,7 +83,6 @@ async def google_callback(request: Request, code: str = None, state: str = None,
             frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
             return RedirectResponse(f"{frontend_url}/my-bookings/trainer?google_auth=error")
 
-        # Check if expired
         if verifier_record.get("expires_at") < datetime.now():
             print("Code verifier expired")
             await db["temp_oauth_verifiers"].delete_one({"_id": verifier_record["_id"]})
@@ -99,7 +95,6 @@ async def google_callback(request: Request, code: str = None, state: str = None,
         calendar_service = GoogleCalendarService()
         flow = calendar_service.get_flow()
 
-        # Set redirect URI for the flow
         redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
         flow.redirect_uri = redirect_uri
         logger.info(f"Using redirect URI: {redirect_uri}")
@@ -129,6 +124,7 @@ async def google_callback(request: Request, code: str = None, state: str = None,
         print(f"Error in google_callback: {e}")
         import traceback
         traceback.print_exc()
+        
         # Redirect to frontend with error
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         error_message = str(e) if e else "Unknown error"
@@ -187,7 +183,6 @@ async def complete_auth(request: Request, current_user = Depends(get_current_use
                 "calendar_enabled": True
             })
 
-        # Delete temporary token
         await db["temp_oauth_tokens"].delete_one({"key": key})
         print("Temporary token deleted")
 

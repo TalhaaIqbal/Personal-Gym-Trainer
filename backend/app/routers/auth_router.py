@@ -9,7 +9,6 @@ from ..core.database import db
 from ..schemas.user_schema import UserResponse
 from ..schemas.auth_schema import LoginRequest, RegisterRequest, Token, RefreshTokenRequest
 from datetime import datetime, timezone
-import uuid
 from ..core.security import decode_access_token, decode_refresh_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -39,10 +38,8 @@ async def login(
         
         await service.enforce_session_limit(user_id)
         
-        family_id = str(uuid.uuid4())
-        
-        access_token = service.create_access_token(user_id, ip=client_ip, user_agent=user_agent, family_id=family_id)
-        refresh_token = service.create_refresh_token(user_id, ip=client_ip, user_agent=user_agent, family_id=family_id)
+        access_token = service.create_access_token(user_id, ip=client_ip, user_agent=user_agent)
+        refresh_token = service.create_refresh_token(user_id, ip=client_ip, user_agent=user_agent)
         
         access_payload = decode_access_token(access_token)
         refresh_payload = decode_refresh_token(refresh_token)
@@ -51,7 +48,6 @@ async def login(
                 "user_id": user_id,
                 "access_jti": access_payload.get("jti"),
                 "refresh_jti": refresh_payload.get("jti"),
-                "family_id": family_id,
                 "ip": client_ip,
                 "user_agent": user_agent,
                 "created_at": datetime.now(timezone.utc),
@@ -114,8 +110,6 @@ async def refresh_token(
         if not tokens:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
         
-        # Create new tokens with current IP/user-agent
-        from ..core.security import decode_refresh_token
         payload = decode_refresh_token(token_data.refresh_token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid refresh token")

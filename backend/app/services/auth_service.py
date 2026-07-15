@@ -4,6 +4,7 @@ from ..core.security import decode_access_token, hash_password, verify_password,
 from datetime import timedelta, datetime, timezone
 from ..core.database import db
 from typing import Optional
+import uuid
 
 
 class AuthService:
@@ -53,13 +54,12 @@ class AuthService:
         if user_id:
             await db["sessions"].delete_many({"user_id": user_id, "access_jti": jti})
 
-    async def enforce_session_limit(self, user_id: str, max_sessions: int = 3) -> None:
+    async def enforce_session_limit(self, user_id: str, max_sessions: int = 2) -> None:
         await db["sessions"].delete_many({
             "user_id": user_id,
             "expires_at": {"$lt": datetime.now(timezone.utc)}
         })
         
-        # active sessions
         active_sessions = await db["sessions"].count_documents({"user_id": user_id})
         
         if active_sessions >= max_sessions:
@@ -68,7 +68,7 @@ class AuthService:
                 sort=[("created_at", 1)]
             )
             if oldest_session:
-                # Blacklist the tokens
+                # Blacklist tokens
                 if oldest_session.get("access_jti"):
                     await db["blacklisted_tokens"].insert_one({
                         "jti": oldest_session["access_jti"],
@@ -82,11 +82,11 @@ class AuthService:
                 # Delete session record
                 await db["sessions"].delete_one({"_id": oldest_session["_id"]})
 
-    def create_access_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
-        return create_access_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent, family_id=family_id)
+    def create_access_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None) -> str:
+        return create_access_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent)
 
-    def create_refresh_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
-        return create_refresh_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent, family_id=family_id)
+    def create_refresh_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None) -> str:
+        return create_refresh_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent)
 
     async def refresh_tokens(self, refresh_token: str, access_token: Optional[str] = None) -> dict | None:
         payload = decode_refresh_token(refresh_token)
@@ -95,23 +95,8 @@ class AuthService:
 
         user_id = payload.get("sub")
         old_jti = payload.get("jti")
-        family_id = payload.get("family_id") or str(uuid.uuid4())  # Use existing or create new family
         if not user_id:
             return None
-
-        # Check if refresh token is already blacklisted
-        if old_jti:
-            blacklisted = await db["blacklisted_tokens"].find_one({"jti": old_jti})
-            if blacklisted:
-                await db["security_incidents"].insert_one({
-                    "type": "refresh_token_reuse",
-                    "user_id": user_id,
-                    "jti": old_jti,
-                    "family_id": family_id,
-                    "detected_at": datetime.now(timezone.utc),
-                    "severity": "high"
-                })
-                return None  # Block the request
 
         user = await self.repository.get_by_id(user_id)
         if not user:
@@ -121,11 +106,10 @@ class AuthService:
         if old_jti:
             await db["blacklisted_tokens"].insert_one({
                 "jti": old_jti,
-                "family_id": family_id,
                 "expires_at": datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
             })
 
-        # Blacklist old access token if provided
+        # Blacklist old access token
         if access_token:
             access_payload = decode_access_token(access_token)
             if access_payload:
@@ -133,11 +117,10 @@ class AuthService:
                 if access_jti:
                     await db["blacklisted_tokens"].insert_one({
                         "jti": access_jti,
-                        "family_id": family_id,
                         "expires_at": datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc)
                     })
 
         return {
-            "access_token": self.create_access_token(user_id, family_id=family_id),
-            "refresh_token": self.create_refresh_token(user_id, family_id=family_id)
+            "access_token": self.create_access_token(user_id),
+            "refresh_token": self.create_refresh_token(user_id)
         }

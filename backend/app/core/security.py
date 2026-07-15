@@ -17,7 +17,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 #-----------------Token Creation-----------------
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({
@@ -25,12 +25,11 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None, ip: 
         "jti": str(uuid.uuid4()), 
         "type": "access",
         "ip": ip,
-        "user_agent": user_agent,
-        "family_id": family_id
+        "user_agent": user_agent
     })
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=HASHING_ALGORITHM)
 
-def create_refresh_token(data: dict, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
+def create_refresh_token(data: dict, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=7))
     to_encode.update({
@@ -38,8 +37,7 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None, ip:
         "jti": str(uuid.uuid4()), 
         "type": "refresh",
         "ip": ip,
-        "user_agent": user_agent,
-        "family_id": family_id
+        "user_agent": user_agent
     })
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=HASHING_ALGORITHM)
 

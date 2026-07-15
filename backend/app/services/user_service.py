@@ -40,7 +40,7 @@ class UserService(BaseService):
         return self._convert_to_response(updated_user)
     
     async def _invalidate_all_user_tokens(self, user_id: str) -> None:
-        # Blacklist all active sessions for this user
+        # Blacklist all active sessions
         sessions = await db["sessions"].find({"user_id": user_id}).to_list(length=None)
         
         for session in sessions:
