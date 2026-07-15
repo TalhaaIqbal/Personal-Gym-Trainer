@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import date, time
+from typing import Literal, Optional
 from ..helper.object_id_validate import PyProjectID
 
 class Booking(BaseModel):
