@@ -120,7 +120,6 @@ class WorkoutPlanUpdate(BaseModel):
 class ExerciseResponse(ExerciseBase):
     id: Optional[str] = Field(None, description="Exercise ID")
     
-    model_config = ConfigDict(from_attributes=True)
 
 class WorkoutDayResponse(BaseModel):
     id: Optional[str] = Field(None, description="Workout day ID")
@@ -128,7 +127,6 @@ class WorkoutDayResponse(BaseModel):
     is_rest_day: bool = Field(..., description="Whether this is a rest day")
     exercises: List[ExerciseResponse] = Field(default_factory=list, description="List of exercises")
     
-    model_config = ConfigDict(from_attributes=True)
 
 class WorkoutPlanResponse(BaseModel):
     id: str = Field(..., description="Workout plan ID")

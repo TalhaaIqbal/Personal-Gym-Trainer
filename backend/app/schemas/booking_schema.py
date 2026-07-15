@@ -43,9 +43,6 @@ class BookingResponseBase(BaseModel):
     def validate_time_range(self):  
         validate_time_order(self.start_time, self.end_time)
         return self
-    
-    model_config = ConfigDict(from_attributes=True)
-
 
 class BookingCreate(BookingBase):
     pass
@@ -69,14 +66,9 @@ class TrainerInfo(BaseModel):
 class ClientInfo(BaseModel):
     name: str
     email: str
-    model_config = ConfigDict(from_attributes=True)
-
 
 class BookingWithTrainerResponse(BookingResponseBase):
     trainer_info: TrainerInfo | None = None
-    model_config = ConfigDict(from_attributes=True)
-
 
 class BookingWithClientResponse(BookingResponseBase):
     client_info: ClientInfo | None = None
-    model_config = ConfigDict(from_attributes=True)

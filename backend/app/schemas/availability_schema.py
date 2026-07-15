@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, model_validator, ConfigDict
+from pydantic import BaseModel, field_validator, model_validator
 from datetime import date, time
 from typing import Self
 from ..helper.date_time_validate import validate_date, validate_time_order
@@ -46,5 +46,3 @@ class AvailabilityUpdate(BaseModel):
 
 class AvailabilityResponse(AvailabilityBase): 
     id: str
-
-    model_config = ConfigDict(from_attributes=True)
