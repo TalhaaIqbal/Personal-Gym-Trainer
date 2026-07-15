@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import date, time
 from ..helper.object_id_validate import PyProjectID
+from typing import Literal
 
 class User(BaseModel):
     id: PyProjectID
