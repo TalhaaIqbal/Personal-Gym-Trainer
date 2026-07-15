@@ -3,6 +3,7 @@ from ..schemas.user_schema import UserCreate
 from ..core.security import decode_access_token, hash_password, verify_password, create_access_token, create_refresh_token, decode_refresh_token
 from datetime import timedelta, datetime, timezone
 from ..core.database import db
+from typing import Optional
 
 
 class AuthService:
@@ -47,35 +48,96 @@ class AuthService:
                 "jti": jti,
                 "expires_at": datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
             })
+        
+        user_id = payload.get("sub")
+        if user_id:
+            await db["sessions"].delete_many({"user_id": user_id, "access_jti": jti})
 
-    def create_access_token(self, user_id: str, expires_delta: timedelta | None = None) -> str:
-        return create_access_token(data={"sub": user_id}, expires_delta=expires_delta)
+    async def enforce_session_limit(self, user_id: str, max_sessions: int = 3) -> None:
+        await db["sessions"].delete_many({
+            "user_id": user_id,
+            "expires_at": {"$lt": datetime.now(timezone.utc)}
+        })
+        
+        # active sessions
+        active_sessions = await db["sessions"].count_documents({"user_id": user_id})
+        
+        if active_sessions >= max_sessions:
+            oldest_session = await db["sessions"].find_one(
+                {"user_id": user_id},
+                sort=[("created_at", 1)]
+            )
+            if oldest_session:
+                # Blacklist the tokens
+                if oldest_session.get("access_jti"):
+                    await db["blacklisted_tokens"].insert_one({
+                        "jti": oldest_session["access_jti"],
+                        "expires_at": oldest_session.get("expires_at", datetime.now(timezone.utc) + timedelta(days=7))
+                    })
+                if oldest_session.get("refresh_jti"):
+                    await db["blacklisted_tokens"].insert_one({
+                        "jti": oldest_session["refresh_jti"],
+                        "expires_at": oldest_session.get("expires_at", datetime.now(timezone.utc) + timedelta(days=7))
+                    })
+                # Delete session record
+                await db["sessions"].delete_one({"_id": oldest_session["_id"]})
 
-    def create_refresh_token(self, user_id: str, expires_delta: timedelta | None = None) -> str:
-        return create_refresh_token(data={"sub": user_id}, expires_delta=expires_delta)
+    def create_access_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
+        return create_access_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent, family_id=family_id)
 
-    async def refresh_tokens(self, refresh_token: str) -> dict | None:
+    def create_refresh_token(self, user_id: str, expires_delta: timedelta | None = None, ip: Optional[str] = None, user_agent: Optional[str] = None, family_id: Optional[str] = None) -> str:
+        return create_refresh_token(data={"sub": user_id}, expires_delta=expires_delta, ip=ip, user_agent=user_agent, family_id=family_id)
+
+    async def refresh_tokens(self, refresh_token: str, access_token: Optional[str] = None) -> dict | None:
         payload = decode_refresh_token(refresh_token)
         if not payload:
             return None
 
         user_id = payload.get("sub")
         old_jti = payload.get("jti")
+        family_id = payload.get("family_id") or str(uuid.uuid4())  # Use existing or create new family
         if not user_id:
             return None
+
+        # Check if refresh token is already blacklisted
+        if old_jti:
+            blacklisted = await db["blacklisted_tokens"].find_one({"jti": old_jti})
+            if blacklisted:
+                await db["security_incidents"].insert_one({
+                    "type": "refresh_token_reuse",
+                    "user_id": user_id,
+                    "jti": old_jti,
+                    "family_id": family_id,
+                    "detected_at": datetime.now(timezone.utc),
+                    "severity": "high"
+                })
+                return None  # Block the request
 
         user = await self.repository.get_by_id(user_id)
         if not user:
             return None
 
-        # Blacklisting old refresh token to prevent reuse
+        # Blacklist old refresh token to prevent reuse
         if old_jti:
             await db["blacklisted_tokens"].insert_one({
                 "jti": old_jti,
+                "family_id": family_id,
                 "expires_at": datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
             })
 
+        # Blacklist old access token if provided
+        if access_token:
+            access_payload = decode_access_token(access_token)
+            if access_payload:
+                access_jti = access_payload.get("jti")
+                if access_jti:
+                    await db["blacklisted_tokens"].insert_one({
+                        "jti": access_jti,
+                        "family_id": family_id,
+                        "expires_at": datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc)
+                    })
+
         return {
-            "access_token": self.create_access_token(user_id),
-            "refresh_token": self.create_refresh_token(user_id)
+            "access_token": self.create_access_token(user_id, family_id=family_id),
+            "refresh_token": self.create_refresh_token(user_id, family_id=family_id)
         }

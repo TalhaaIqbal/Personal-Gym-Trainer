@@ -1,8 +1,17 @@
 from typing import Any, Dict, Generic, List, TypeVar
-from bson.objectid import ObjectId 
+from bson.objectid import ObjectId, InvalidId
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 ModelType = TypeVar('ModelType', bound=dict)
+
+
+def _validate_object_id(id: str) -> ObjectId | None:
+    if not ObjectId.is_valid(id):
+        return None
+    try:
+        return ObjectId(id)
+    except (InvalidId, ValueError, TypeError):
+        return None
 
 class BaseRepository(Generic[ModelType]):
     def __init__(self, collection: AsyncIOMotorCollection):
@@ -18,7 +27,10 @@ class BaseRepository(Generic[ModelType]):
         return all_results
     
     async def get_by_id(self, id: str) -> ModelType | None:
-        result = await self.collection.find_one({"_id": ObjectId(id)})
+        object_id = _validate_object_id(id)
+        if object_id is None:
+            return None
+        result = await self.collection.find_one({"_id": object_id})
         return result
 
     async def create(self, data: ModelType) -> ModelType:
@@ -27,12 +39,18 @@ class BaseRepository(Generic[ModelType]):
         return created_doc
     
     async def delete(self, item_id: str) -> bool:
-        result = await self.collection.delete_one({"_id": ObjectId(item_id)})
+        object_id = _validate_object_id(item_id)
+        if object_id is None:
+            return False
+        result = await self.collection.delete_one({"_id": object_id})
         return result.deleted_count > 0
 
     async def update(self, item_id: str, data: dict) -> ModelType | None:
+        object_id = _validate_object_id(item_id)
+        if object_id is None:
+            return None
         result = await self.collection.update_one(
-            {"_id": ObjectId(item_id)},
+            {"_id": object_id},
             {"$set": data}
         )
         if result.modified_count == 0:

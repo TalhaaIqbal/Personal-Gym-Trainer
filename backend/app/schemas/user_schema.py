@@ -10,7 +10,6 @@ OptionalValidPassword = Annotated[ str | None,
 class UserBase(BaseModel):
     email: EmailStr
     name: str
-    role: Literal["client", "trainer", "admin"] = "client"
 
 
 class UserCreate(UserBase):
@@ -22,9 +21,12 @@ class UserUpdate(BaseModel):
     name: str | None = None
     role: Literal["client", "trainer", "admin"] | None = None
     password: OptionalValidPassword = None
+    
 
-
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: str
+    email: EmailStr
+    name: str
+    role: Literal["client", "trainer", "admin"]
 
     model_config = ConfigDict(from_attributes=True)

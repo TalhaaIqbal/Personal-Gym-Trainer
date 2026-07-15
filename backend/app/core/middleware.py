@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from bson.objectid import ObjectId
 from .security import decode_access_token
@@ -9,7 +9,10 @@ from typing import Literal
 bearer_scheme = HTTPBearer()
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request = None
+) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -32,6 +35,24 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
             else:
                 raise credentials_exception
 
+    if request:
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        
+        token_ip = payload.get("ip")
+        token_user_agent = payload.get("user_agent")
+        
+        if token_ip and token_ip != client_ip:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token IP mismatch - possible session hijacking"
+            )
+        if token_user_agent and token_user_agent != user_agent:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token user-agent mismatch - possible session hijacking"
+            )
+
     user_id = payload.get("sub")
     if user_id is None:
         raise credentials_exception
@@ -44,7 +65,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
     if user is None:
         raise credentials_exception
 
-    # Convert ObjectId to string
     user["id"] = str(user.pop("_id"))
     return user
 
