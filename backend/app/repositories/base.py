@@ -1,9 +1,6 @@
-from typing import Any, Dict, Generic, List, TypeVar
+from typing import Any, Dict, List
 from bson.objectid import ObjectId, InvalidId
 from motor.motor_asyncio import AsyncIOMotorCollection
-
-ModelType = TypeVar('ModelType', bound=dict)
-
 
 def _validate_object_id(id: str) -> ObjectId | None:
     if not ObjectId.is_valid(id):
@@ -13,7 +10,7 @@ def _validate_object_id(id: str) -> ObjectId | None:
     except (InvalidId, ValueError, TypeError):
         return None
 
-class BaseRepository(Generic[ModelType]):
+class BaseRepository[ModelType: dict]:
     def __init__(self, collection: AsyncIOMotorCollection):
         self.collection = collection
 

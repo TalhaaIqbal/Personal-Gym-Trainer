@@ -1,4 +1,4 @@
-from backend.app.repositories.base import BaseRepository
+from ..repositories.base import BaseRepository
 from ..helper.datetime_to_string import convert_datetime_to_string
 
 class BaseService[ModelType: dict, RepositoryType: BaseRepository]:

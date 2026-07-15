@@ -1,14 +1,6 @@
-from pydantic import BaseModel, field_validator, BeforeValidator
-from typing import Annotated, Literal
-from bson.objectid import ObjectId
-from datetime import date
-
-def validate_object_id(v: str) -> str:
-    if ObjectId.is_valid(v):
-        return v
-    raise ValueError("Invalid Object ID")
-
-PyProjectID = Annotated[str, BeforeValidator(validate_object_id)]
+from pydantic import BaseModel
+from datetime import date, time
+from ..helper.object_id_validate import PyProjectID
 
 class ProgressLog(BaseModel):
     client_id: PyProjectID
