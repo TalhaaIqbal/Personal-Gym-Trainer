@@ -77,7 +77,7 @@ class AvailabilityService(BaseService):
                 return None
             
             if self.booking_repository:
-                pending_bookings = await self.booking_repository(
+                pending_bookings = await self.booking_repository.get_by_availability_id(
                     availability_id, status="pending"
                 )
                 confirmed_bookings = await self.booking_repository.get_by_availability_id(
