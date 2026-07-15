@@ -30,7 +30,10 @@ async def get_current_user(
         blacklisted = await db["blacklisted_tokens"].find_one({"jti": jti})
         if blacklisted:
             # Clean up expired blacklisted tokens
-            if blacklisted.get("expires_at") < datetime.now(timezone.utc):
+            expires_at = blacklisted.get("expires_at")
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
                 await db["blacklisted_tokens"].delete_one({"jti": jti})
             else:
                 raise credentials_exception
