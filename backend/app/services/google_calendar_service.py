@@ -72,6 +72,8 @@ class GoogleCalendarSyncService:
                 datetime.strptime(booking_date, "%Y-%m-%d").date(),
                 datetime.strptime(end_time, "%H:%M:%S").time()
             )
+            
+            print(start_datetime, end_datetime)
 
             summary = f"Training Session - Gym Booking"
 

@@ -18,13 +18,9 @@ class ExerciseBase(BaseModel):
     rest_time: Optional[str] = Field(None, description="Rest time between sets")
     notes: Optional[str] = Field(None, max_length=500, description="Additional notes")
     video_key: Optional[str] = Field(None, description="Video reference key")
-    
-    model_config = ConfigDict(from_attributes=True) 
-        
 
 class ExerciseCreate(ExerciseBase):
     pass
-
 
 class WorkoutDayCreate(BaseModel):
     date: Annotated[date, Field(description="Workout date")]
@@ -34,7 +30,6 @@ class WorkoutDayCreate(BaseModel):
     @model_validator(mode='after')
     def validate_rest_day_exercises(self):
         if self.is_rest_day and self.exercises:
-            # Auto-clear exercises if it's marked as rest day
             self.exercises = []
         return self
 
@@ -85,7 +80,6 @@ class WorkoutDayUpdate(BaseModel):
     @model_validator(mode='after')
     def validate_rest_day_exercises(self) -> 'WorkoutDayUpdate':
         if self.is_rest_day and self.exercises:
-            # Auto-clear exercises if it's marked as rest day
             self.exercises = []
         return self
 

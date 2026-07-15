@@ -43,11 +43,9 @@ class GoogleCalendarService:
             'location': location,
             'start': {
                 'dateTime': start_datetime.isoformat(),
-                'timeZone': 'UTC',
             },
             'end': {
                 'dateTime': end_datetime.isoformat(),
-                'timeZone': 'UTC',
             },
         }
     
