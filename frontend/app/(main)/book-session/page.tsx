@@ -72,17 +72,20 @@ export default function BookSession() {
 
         setLoading(true)
         try {
+            const userLocalTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             console.log("Booking data:", {
                 trainer_id: selectedTrainer,
                 booking_date: avail.booking_date,
                 start_time: avail.start_time,
-                end_time: avail.end_time
+                end_time: avail.end_time,
+                timezone: userLocalTimeZone
             });
             await axios.post('/bookings/', {
                 trainer_id: selectedTrainer,
                 booking_date: avail.booking_date,
                 start_time: avail.start_time,
-                end_time: avail.end_time
+                end_time: avail.end_time,
+                timezone: userLocalTimeZone
             })
             alert('Booking request sent successfully!')
             router.push('/my-bookings/client')

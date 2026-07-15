@@ -78,13 +78,16 @@ class GoogleCalendarSyncService:
             summary = f"Training Session - Gym Booking"
 
             # Create or update event
+            timezone = booking.get("timezone", "UTC")
+            
             if action == "create" or not booking.get("google_event_id"):
                 logger.info("Creating new calendar event")
                 event_id = calendar_service.create_event(
                     summary=summary,
                     start_datetime=start_datetime,
                     end_datetime=end_datetime,
-                    description=f"Training session booking. Status: {booking['status']}"
+                    description=f"Training session booking. Status: {booking['status']}",
+                    timezone=timezone
                 )
                 logger.info(f"Event created with ID: {event_id}")
 
@@ -97,7 +100,8 @@ class GoogleCalendarSyncService:
                         summary=summary,
                         start_datetime=start_datetime,
                         end_datetime=end_datetime,
-                        description=f"Training session booking. Status: {booking['status']}"
+                        description=f"Training session booking. Status: {booking['status']}",
+                        timezone=timezone
                     )
                     logger.info("Event updated successfully")
                 except Exception as update_error:
@@ -109,7 +113,8 @@ class GoogleCalendarSyncService:
                         summary=summary,
                         start_datetime=start_datetime,
                         end_datetime=end_datetime,
-                        description=f"Training session booking. Status: {booking['status']}"
+                        description=f"Training session booking. Status: {booking['status']}",
+                        timezone=timezone
                     )
                     logger.info(f"Event created with ID: {event_id}")
                     # Save new event ID to booking

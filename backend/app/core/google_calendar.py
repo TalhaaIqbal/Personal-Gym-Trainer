@@ -36,16 +36,18 @@ class GoogleCalendarService:
         self.service = build('calendar', 'v3', credentials=credentials)
         return self.service
     
-    def _build_event_dict(self, summary: str, start_datetime: datetime, end_datetime: datetime, description: str = "", location: str = "") -> dict:
+    def _build_event_dict(self, summary: str, start_datetime: datetime, end_datetime: datetime, description: str = "", location: str = "", timezone: str = "UTC") -> dict:
         return {
             'summary': summary,
             'description': description,
             'location': location,
             'start': {
                 'dateTime': start_datetime.isoformat(),
+                'timeZone': timezone,
             },
             'end': {
                 'dateTime': end_datetime.isoformat(),
+                'timeZone': timezone,
             },
         }
     
@@ -54,11 +56,12 @@ class GoogleCalendarService:
                      start_datetime: datetime,
                      end_datetime: datetime,
                      description: str = "",
-                     location: str = "") -> str:
+                     location: str = "",
+                     timezone: str = "UTC") -> str:
         if not self.service:
             raise ValueError("Calendar service not initialized")
         
-        event = self._build_event_dict(summary, start_datetime, end_datetime, description, location)
+        event = self._build_event_dict(summary, start_datetime, end_datetime, description, location, timezone)
         event_result = self.service.events().insert(calendarId='primary', body=event).execute()
         return event_result['id']
     
@@ -68,11 +71,12 @@ class GoogleCalendarService:
                      start_datetime: datetime,
                      end_datetime: datetime,
                      description: str = "",
-                     location: str = "") -> str:
+                     location: str = "",
+                     timezone: str = "UTC") -> str:
         if not self.service:
             raise ValueError("Calendar service not initialized")
         
-        event = self._build_event_dict(summary, start_datetime, end_datetime, description, location)
+        event = self._build_event_dict(summary, start_datetime, end_datetime, description, location, timezone)
         event_result = self.service.events().update(
             calendarId='primary',
             eventId=event_id,

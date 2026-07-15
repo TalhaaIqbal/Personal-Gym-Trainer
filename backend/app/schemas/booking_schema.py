@@ -9,6 +9,7 @@ class BookingBase(BaseModel):
     booking_date: date
     start_time: time
     end_time: time
+    timezone: str = "UTC"
     
     @field_validator('booking_date')
     @classmethod 
