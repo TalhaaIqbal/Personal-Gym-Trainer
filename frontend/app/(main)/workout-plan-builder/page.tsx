@@ -494,7 +494,7 @@ function WorkoutPlanBuilderContent() {
                                                             placeholder="Any additional instructions..."
                                                             rows={2}
                                                         />
-                                                    </div>
+                                                    </div>   
                                                     <div className="md:col-span-2">
                                                         <label className="block text-blue-200 mb-1 text-sm">Exercise Video (Optional)</label>
                                                         {!exercise.video_file ? (
