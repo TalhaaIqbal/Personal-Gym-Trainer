@@ -41,7 +41,7 @@ function WorkoutPlanBuilderContent() {
     const [client, setClient] = useState<Client | null>(null)
     const [planName, setPlanName] = useState('')
     const [description, setDescription] = useState('')
-    const [videoProgress, setVideoProgress] = useState<Number>(0)
+    const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([])
@@ -102,13 +102,19 @@ function WorkoutPlanBuilderContent() {
         setWorkoutDays(updatedDays)
     }
 
-    const uploadVideo = async (file: File): Promise<string> => {
+    const uploadVideo = async (file: File, onProgress?: (progress: number) => void): Promise<string> => {
         const formData = new FormData()
         formData.append('file', file)
 
         const response = await axios.post('/videos/workout-video/upload', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
+            },
+            onUploadProgress: (progressEvent) => {
+                if (progressEvent.total && onProgress) {
+                    const progress = (progressEvent.loaded / progressEvent.total) * 100;
+                    onProgress(progress);
+                }
             }
         })
 
@@ -190,18 +196,28 @@ function WorkoutPlanBuilderContent() {
         }))
 
         setSubmitting(true)
+        setUploadProgress({})
 
         try {
             // Upload videos first and get video keys
             const daysWithVideoKeys = await Promise.all(
-                daysWithExercises.map(async (day) => ({
+                daysWithExercises.map(async (day, dayIndex) => ({
                     ...day,
                     exercises: await Promise.all(
-                        day.exercises.map(async (exercise) => ({
-                            ...exercise,
-                            video_key: exercise.video_file ? await uploadVideo(exercise.video_file) : undefined,
-                            video_file: undefined
-                        }))
+                        day.exercises.map(async (exercise, exerciseIndex) => {
+                            if (exercise.video_file) {
+                                const uploadKey = `${dayIndex}-${exerciseIndex}`
+                                setUploadProgress(prev => ({ ...prev, [uploadKey]: 0 }))
+                                
+                                const video_key = await uploadVideo(exercise.video_file, (progress) => {
+                                    setUploadProgress(prev => ({ ...prev, [uploadKey]: progress }))
+                                })
+                                
+                                setUploadProgress(prev => ({ ...prev, [uploadKey]: 100 }))
+                                return { ...exercise, video_key, video_file: undefined }
+                            }
+                            return { ...exercise, video_file: undefined }
+                        })
                     )
                 }))
             )
@@ -501,16 +517,32 @@ function WorkoutPlanBuilderContent() {
                                                                 </label>
                                                             </div>
                                                         ) : (
-                                                            <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
-                                                                <span className="text-green-400 text-sm">✓ {exercise.video_file.name}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleRemoveVideo(dayIndex, exerciseIndex)}
-                                                                    className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </div>
+                                                            <>
+                                                                <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                                                    <span className="text-green-400 text-sm">✓ {exercise.video_file.name}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleRemoveVideo(dayIndex, exerciseIndex)}
+                                                                        className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
+                                                                    >
+                                                                        Remove
+                                                                    </button>
+                                                                </div>
+                                                                {submitting && uploadProgress[`${dayIndex}-${exerciseIndex}`] !== undefined && (
+                                                                    <div className="mt-2">
+                                                                        <div className="flex items-center justify-between text-xs text-blue-200 mb-1">
+                                                                            <span>Uploading video...</span>
+                                                                            <span>{uploadProgress[`${dayIndex}-${exerciseIndex}`]}%</span>
+                                                                        </div>
+                                                                        <div className="w-full bg-white/20 rounded-full h-2">
+                                                                            <div
+                                                                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                                                style={{ width: `${uploadProgress[`${dayIndex}-${exerciseIndex}`]}%` }}
+                                                                            ></div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
