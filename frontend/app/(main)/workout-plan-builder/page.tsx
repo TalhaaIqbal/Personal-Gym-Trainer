@@ -41,11 +41,11 @@ function WorkoutPlanBuilderContent() {
     const [client, setClient] = useState<Client | null>(null)
     const [planName, setPlanName] = useState('')
     const [description, setDescription] = useState('')
+    const [videoProgress, setVideoProgress] = useState<Number>(0)
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
-    const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([
-        { date: '', is_rest_day: false, exercises: [{ name: '', muscle_groups: [], sets: 3, reps: '10-12', weight: '', duration: '', rest_time: '60s', notes: '' }] }
-    ])
+    const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([])
+    const [workoutDaysGenerated, setWorkoutDaysGenerated] = useState(false)
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
@@ -139,10 +139,10 @@ function WorkoutPlanBuilderContent() {
     }
 
     const generateWorkoutDays = () => {
-        if (!startDate || !endDate) return
+        if (!startDate) return
 
         const start = new Date(startDate)
-        const end = new Date(endDate)
+        const end = endDate ? new Date(endDate) : start
         const days: WorkoutDay[] = []
 
         const currentDate = new Date(start)
@@ -156,6 +156,7 @@ function WorkoutPlanBuilderContent() {
         }
 
         setWorkoutDays(days)
+        setWorkoutDaysGenerated(true)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -313,7 +314,7 @@ function WorkoutPlanBuilderContent() {
                                     />
                                 </div>
                             </div>
-                            {startDate && endDate && (
+                            {startDate && (
                                 <button
                                     type="button"
                                     onClick={generateWorkoutDays}
@@ -334,7 +335,13 @@ function WorkoutPlanBuilderContent() {
                             </span>
                         </div>
 
-                        {workoutDays.map((day, dayIndex) => (
+                        {!workoutDaysGenerated ? (
+                            <div className="text-center py-8">
+                                <p className="text-blue-200 mb-4">Generate workout days to add exercises</p>
+                                <p className="text-blue-300 text-sm">Fill in the start date above and click "Generate Workout Days"</p>
+                            </div>
+                        ) : (
+                            workoutDays.map((day, dayIndex) => (
                             <div key={dayIndex} className="bg-white/5 rounded-lg p-4 mb-4 border border-white/10">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-4">
@@ -512,7 +519,7 @@ function WorkoutPlanBuilderContent() {
                                     </>
                                 )}
                             </div>
-                        ))}
+                        )))}
                     </div>
 
                     {/* Submit Button */}

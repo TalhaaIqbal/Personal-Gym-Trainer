@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backblaze B2 CORS Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .cors-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Backblaze B2 CORS Test</h1>
+        
+        <div class="test-section cors-info">
+            <h3>ℹ️ CORS Information</h3>
+            <p>This page tests the CORS configuration of your Backblaze B2 bucket.</p>
+            <p><strong>Current Origin:</strong> <span id="currentOrigin"></span></p>
+            <p><strong>Expected Behavior:</strong> Your B2 bucket should allow requests from this origin.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔐 Authentication</h3>
+            <p>Login to test authenticated endpoints:</p>
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <button onclick="logout()">Logout</button>
+            <div id="authResult" class="result"></div>
+            <p><strong>Auth Status:</strong> <span id="authStatus">Not authenticated</span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>1. Test with Presigned URL</h3>
+            <p>Enter a presigned URL from your backend to test CORS:</p>
+            <input type="text" id="presignedUrl" placeholder="https://...">
+            <button onclick="testPresignedUrl()">Test Presigned URL</button>
+            <div id="presignedResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Test Video Upload</h3>
+            <p>Select a video file to test upload CORS:</p>
+            <input type="file" id="videoFile" accept="video/*">
+            <button onclick="testVideoUpload()">Test Upload</button>
+            <div id="uploadResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test OPTIONS Request (Preflight)</h3>
+            <p>Test CORS preflight request:</p>
+            <input type="text" id="preflightUrl" placeholder="https://...">
+            <button onclick="testPreflight()">Test OPTIONS Request</button>
+            <div id="preflightResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Test Different Origins</h3>
+            <p>Test requests with custom Origin headers:</p>
+            <input type="text" id="customOrigin" placeholder="http://localhost:3000" value="http://localhost:3000">
+            <input type="text" id="testUrl" placeholder="https://...">
+            <button onclick="testCustomOrigin()">Test Custom Origin</button>
+            <div id="customOriginResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Get Presigned URL from Backend</h3>
+            <p>Generate a presigned URL from your backend:</p>
+            <input type="text" id="videoKey" placeholder="videos/test.mp4">
+            <button onclick="getPresignedUrl()">Get Presigned URL</button>
+            <div id="presignedUrlResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Display current origin
+        document.getElementById('currentOrigin').textContent = window.location.origin;
+        
+        // Check auth status on load
+        updateAuthStatus();
+
+        const API_URL = 'http://127.0.0.1:8000';
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + type;
+            element.textContent = message;
+        }
+
+        function updateAuthStatus() {
+            const token = localStorage.getItem('token');
+            const statusElement = document.getElementById('authStatus');
+            if (token) {
+                statusElement.textContent = 'Authenticated ✓';
+                statusElement.style.color = 'green';
+            } else {
+                statusElement.textContent = 'Not authenticated';
+                statusElement.style.color = 'red';
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showResult('authResult', 'Please enter email and password', 'error');
+                return;
+            }
+
+            showResult('authResult', 'Logging in...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', result.access_token);
+                    localStorage.setItem('refreshToken', result.refresh_token);
+                    showResult('authResult', 'Login successful!', 'success');
+                    updateAuthStatus();
+                } else {
+                    showResult('authResult', `Login failed: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult('authResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            showResult('authResult', 'Logged out', 'info');
+            updateAuthStatus();
+        }
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+
+        async function testPresignedUrl() {
+            const url = document.getElementById('presignedUrl').value;
+            if (!url) {
+                showResult('presignedResult', 'Please enter a presigned URL', 'error');
+                return;
+            }
+
+            showResult('presignedResult', 'Testing...', 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Max-Age': response.headers.get('Access-Control-Max-Age')
+                };
+
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    corsHeaders: corsHeaders,
+                    allHeaders: Object.fromEntries(response.headers.entries())
+                };
+
+                showResult('presignedResult', JSON.stringify(result, null, 2), response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult('presignedResult', `Error: ${error.message}\n\nThis usually indicates CORS is blocking the request.`, 'error');
+            }
+        }
+
+        async function testVideoUpload() {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showResult('uploadResult', 'Please select a video file', 'error');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showResult('uploadResult', 'Please login first', 'error');
+                return;
+            }
+
+            showResult('uploadResult', 'Getting presigned URL...', 'info');
+
+            try {
+                // Get presigned URL from backend
+                const presignedResponse = await fetch(`${API_URL}/videos/workout-video/presigned-url?filename=${encodeURIComponent(file.name)}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!presignedResponse.ok) {
+                    const error = await presignedResponse.json();
+                    showResult('uploadResult', `Failed to get presigned URL: ${JSON.stringify(error)}`, 'error');
+                    return;
+                }
+
+                const { upload_url, video_key } = await presignedResponse.json();
+                showResult('uploadResult', `Uploading to B2...\nVideo Key: ${video_key}`, 'info');
+
+                // Upload directly to B2 using presigned URL (no custom headers)
+                const uploadResponse = await fetch(upload_url, {
+                    method: 'PUT',
+                    mode: 'cors',
+                    body: file
+                });
+
+                if (uploadResponse.ok) {
+                    showResult('uploadResult', `Upload successful!\nVideo Key: ${video_key}`, 'success');
+                } else {
+                    showResult('uploadResult', `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`, 'error');
+                }
+            } catch (error) {
+                showResult('uploadResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPreflight() {
+            const url = document.getElementById('preflightUrl').value;
+            if (!url) {
+                showResult('preflightResult', 'Please enter a URL', 'error');
+                return;
+            }
+
+            showResult('preflightResult', 'Testing OPTIONS request...', 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'OPTIONS',
+                    mode: 'cors',
+                    headers: {
+                        'Access-Control-Request-Method': 'GET',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Max-Age': response.headers.get('Access-Control-Max-Age')
+                };
+
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    corsHeaders: corsHeaders,
+                    allHeaders: Object.fromEntries(response.headers.entries())
+                };
+
+                showResult('preflightResult', JSON.stringify(result, null, 2), response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResult('preflightResult', `Error: ${error.message}\n\nOPTIONS request failed. This indicates CORS preflight is not properly configured.`, 'error');
+            }
+        }
+
+        async function testCustomOrigin() {
+            const url = document.getElementById('testUrl').value;
+            const origin = document.getElementById('customOrigin').value;
+
+            if (!url) {
+                showResult('customOriginResult', 'Please enter a URL', 'error');
+                return;
+            }
+
+            showResult('customOriginResult', `Testing with Origin: ${origin}...`, 'info');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Origin': origin
+                    }
+                });
+
+                const allowedOrigin = response.headers.get('Access-Control-Allow-Origin');
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    requestedOrigin: origin,
+                    allowedOrigin: allowedOrigin,
+                    originAllowed: allowedOrigin === '*' || allowedOrigin === origin,
+                    allHeaders: Object.fromEntries(response.headers.entries())
+                };
+
+                showResult('customOriginResult', JSON.stringify(result, null, 2), result.originAllowed ? 'success' : 'error');
+            } catch (error) {
+                showResult('customOriginResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function getPresignedUrl() {
+            const videoKey = document.getElementById('videoKey').value;
+            if (!videoKey) {
+                showResult('presignedUrlResult', 'Please enter a video key', 'error');
+                return;
+            }
+
+            showResult('presignedUrlResult', 'Fetching presigned URL...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/videos/presigned-url?key=${encodeURIComponent(videoKey)}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                const result = await response.json();
+                showResult('presignedUrlResult', JSON.stringify(result, null, 2), response.ok ? 'success' : 'error');
+                
+                if (result.url) {
+                    document.getElementById('presignedUrl').value = result.url;
+                }
+            } catch (error) {
+                showResult('presignedUrlResult', `Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
